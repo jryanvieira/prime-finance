@@ -1,0 +1,31 @@
+# Database
+*.sqlite
+*.sqlite-*
+*.db
+
+# Env vars
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+/backend/bin/
+/backend/tmp/
+
+# Node
+node_modules/
+.next/
+dist/
+build/

@@ -1,0 +1,354 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-03-26T00:00:00.000Z",
+  "__export_source": "dash-fin",
+  "resources": [
+    {
+      "_id": "wrk_dash_fin",
+      "_type": "workspace",
+      "name": "dash-fin",
+      "description": "dash-fin backend API",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_dash_fin_base",
+      "_type": "environment",
+      "parentId": "wrk_dash_fin",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "access_token": "",
+        "refresh_token": ""
+      }
+    },
+
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_dash_fin",
+      "name": "Auth"
+    },
+    {
+      "_id": "req_signup",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Signup",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/auth/signup",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+      }
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/auth/login",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+      }
+    },
+    {
+      "_id": "req_refresh",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Refresh",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/auth/refresh",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh_token\": \"{{ _.refresh_token }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_logout",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Logout",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/auth/logout",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh_token\": \"{{ _.refresh_token }}\"\n}"
+      }
+    },
+
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_dash_fin",
+      "name": "Health"
+    },
+    {
+      "_id": "req_healthz",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Healthz",
+      "method": "GET",
+      "url": "{{ _.base_url }}/healthz",
+      "headers": []
+    },
+
+    {
+      "_id": "fld_payment_methods",
+      "_type": "request_group",
+      "parentId": "wrk_dash_fin",
+      "name": "Payment Methods"
+    },
+    {
+      "_id": "req_pm_create",
+      "_type": "request",
+      "parentId": "fld_payment_methods",
+      "name": "Create payment method",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/payment-methods",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"card\",\n  \"label\": \"Nubank\"\n}"
+      }
+    },
+    {
+      "_id": "req_pm_list",
+      "_type": "request",
+      "parentId": "fld_payment_methods",
+      "name": "List payment methods",
+      "method": "GET",
+      "url": "{{ _.base_url }}/v1/payment-methods",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+    {
+      "_id": "req_pm_update",
+      "_type": "request",
+      "parentId": "fld_payment_methods",
+      "name": "Update payment method (set id)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/v1/payment-methods/{{ _.payment_method_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"card\",\n  \"label\": \"Inter\"\n}"
+      }
+    },
+    {
+      "_id": "req_pm_delete",
+      "_type": "request",
+      "parentId": "fld_payment_methods",
+      "name": "Delete payment method (set id)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/v1/payment-methods/{{ _.payment_method_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+
+    {
+      "_id": "fld_expenses",
+      "_type": "request_group",
+      "parentId": "wrk_dash_fin",
+      "name": "Expenses"
+    },
+    {
+      "_id": "req_exp_create_single",
+      "_type": "request",
+      "parentId": "fld_expenses",
+      "name": "Create expense (single)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/expenses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"date\": \"2026-03-01\",\n  \"description\": \"Coffee\",\n  \"amount_cents\": 590,\n  \"payment_method_id\": \"{{ _.payment_method_id }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_exp_create_installments_total",
+      "_type": "request",
+      "parentId": "fld_expenses",
+      "name": "Create expense (installments from total)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/expenses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"date\": \"2026-01-31\",\n  \"description\": \"Phone\",\n  \"installments_count\": 3,\n  \"total_amount_cents\": 100,\n  \"payment_method_id\": \"{{ _.payment_method_id }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_exp_create_installments_monthly",
+      "_type": "request",
+      "parentId": "fld_expenses",
+      "name": "Create expense (installments from monthly)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/expenses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"date\": \"2026-03-10\",\n  \"description\": \"TV\",\n  \"installments_count\": 10,\n  \"monthly_amount_cents\": 12990,\n  \"payment_method_id\": \"{{ _.payment_method_id }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_exp_list",
+      "_type": "request",
+      "parentId": "fld_expenses",
+      "name": "List expenses (date range)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/v1/expenses?from=2026-03-01&to=2026-03-31",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+    {
+      "_id": "req_exp_update",
+      "_type": "request",
+      "parentId": "fld_expenses",
+      "name": "Update expense (set id)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/v1/expenses/{{ _.expense_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"date\": \"2026-03-02\",\n  \"description\": \"Coffee 2\",\n  \"amount_cents\": 600,\n  \"payment_method_id\": \"{{ _.payment_method_id }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_exp_delete",
+      "_type": "request",
+      "parentId": "fld_expenses",
+      "name": "Delete expense (set id)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/v1/expenses/{{ _.expense_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+    {
+      "_id": "req_exp_delete_group",
+      "_type": "request",
+      "parentId": "fld_expenses",
+      "name": "Delete installment group (set group_id)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/v1/installment-groups/{{ _.installment_group_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+
+    {
+      "_id": "fld_recurring",
+      "_type": "request_group",
+      "parentId": "wrk_dash_fin",
+      "name": "Recurring Expenses"
+    },
+    {
+      "_id": "req_rec_create",
+      "_type": "request",
+      "parentId": "fld_recurring",
+      "name": "Create recurring expense",
+      "method": "POST",
+      "url": "{{ _.base_url }}/v1/recurring-expenses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"start_month\": \"2026-01\",\n  \"day_of_month\": 31,\n  \"description\": \"Rent\",\n  \"amount_cents\": 250000,\n  \"payment_method_id\": \"{{ _.payment_method_id }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_rec_list",
+      "_type": "request",
+      "parentId": "fld_recurring",
+      "name": "List recurring expenses",
+      "method": "GET",
+      "url": "{{ _.base_url }}/v1/recurring-expenses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+    {
+      "_id": "req_rec_update",
+      "_type": "request",
+      "parentId": "fld_recurring",
+      "name": "Update recurring expense (set id)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/v1/recurring-expenses/{{ _.recurring_expense_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"start_month\": \"2026-01\",\n  \"day_of_month\": 30,\n  \"description\": \"Rent (updated)\",\n  \"amount_cents\": 260000,\n  \"payment_method_id\": \"{{ _.payment_method_id }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_rec_delete",
+      "_type": "request",
+      "parentId": "fld_recurring",
+      "name": "Delete recurring expense (set id)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/v1/recurring-expenses/{{ _.recurring_expense_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+
+    {
+      "_id": "fld_month_view",
+      "_type": "request_group",
+      "parentId": "wrk_dash_fin",
+      "name": "Month View"
+    },
+    {
+      "_id": "req_month_view",
+      "_type": "request",
+      "parentId": "fld_month_view",
+      "name": "Month expenses (real + virtual)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/v1/months/2026-03/expenses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    }
+  ]
+}
+
