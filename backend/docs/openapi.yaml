@@ -1,0 +1,756 @@
+openapi: 3.0.3
+info:
+  title: Dash Fin API
+  version: 1.0.0
+  description: API backend em Go para dashboard financeiro.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Health
+  - name: Auth
+  - name: Payment Methods
+  - name: Expenses
+  - name: Recurring Expenses
+  - name: Month View
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Healthcheck
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /v1/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Cadastrar usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentialsRequest'
+      responses:
+        '200':
+          description: Tokens gerados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentialsRequest'
+      responses:
+        '200':
+          description: Tokens gerados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Renovar access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Novos tokens (refresh rotacionado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (revoga refresh token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: Logout realizado
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/payment-methods:
+    get:
+      tags: [Payment Methods]
+      summary: Listar meios de pagamento
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de meios de pagamento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Payment Methods]
+      summary: Criar meio de pagamento
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodRequest'
+      responses:
+        '201':
+          description: Meio de pagamento criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/payment-methods/{id}:
+    patch:
+      tags: [Payment Methods]
+      summary: Atualizar meio de pagamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodRequest'
+      responses:
+        '204':
+          description: Atualizado
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Payment Methods]
+      summary: Deletar meio de pagamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deletado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/expenses:
+    get:
+      tags: [Expenses]
+      summary: Listar gastos por intervalo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Lista de gastos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Expenses]
+      summary: Criar gasto simples ou parcelado
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateExpenseSingleRequest'
+                - $ref: '#/components/schemas/CreateExpenseInstallmentByTotalRequest'
+                - $ref: '#/components/schemas/CreateExpenseInstallmentByMonthlyRequest'
+      responses:
+        '201':
+          description: Gasto criado
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Expense'
+                  - $ref: '#/components/schemas/ExpenseInstallmentGroupResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/expenses/{id}:
+    patch:
+      tags: [Expenses]
+      summary: Atualizar gasto
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExpenseRequest'
+      responses:
+        '204':
+          description: Atualizado
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Expenses]
+      summary: Deletar gasto
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deletado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/installment-groups/{group_id}:
+    delete:
+      tags: [Expenses]
+      summary: Deletar todas as parcelas de uma compra
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deletado
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/recurring-expenses:
+    get:
+      tags: [Recurring Expenses]
+      summary: Listar gastos fixos
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de recorrentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringExpenseListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Recurring Expenses]
+      summary: Criar gasto fixo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecurringExpenseRequest'
+      responses:
+        '201':
+          description: Criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringExpense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/recurring-expenses/{id}:
+    patch:
+      tags: [Recurring Expenses]
+      summary: Atualizar gasto fixo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecurringExpenseRequest'
+      responses:
+        '204':
+          description: Atualizado
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Recurring Expenses]
+      summary: Deletar gasto fixo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deletado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/months/{month}/expenses:
+    get:
+      tags: [Month View]
+      summary: Listar gastos do mês (inclui recorrentes virtuais)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: month
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: '2026-03'
+      responses:
+        '200':
+          description: Itens do mês
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthExpensesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Não autenticado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required: [code, message]
+      required: [error]
+
+    AuthCredentialsRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+      required: [email, password]
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+      required: [refresh_token]
+
+    AuthTokensResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+      required: [access_token, refresh_token]
+
+    PaymentMethodRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          example: card
+        label:
+          type: string
+          example: Nubank
+      required: [type, label]
+
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        label:
+          type: string
+      required: [id, type, label]
+
+    PaymentMethodListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethod'
+      required: [items]
+
+    Expense:
+      type: object
+      properties:
+        id:
+          type: string
+        payment_method_id:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        category:
+          type: string
+          nullable: true
+        installment_group_id:
+          type: string
+          nullable: true
+        installments_count:
+          type: integer
+          nullable: true
+        installment_index:
+          type: integer
+          nullable: true
+        monthly_amount_cents:
+          type: integer
+          format: int64
+          nullable: true
+        total_amount_cents:
+          type: integer
+          format: int64
+          nullable: true
+      required: [id, date, description, amount_cents]
+
+    ExpenseListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Expense'
+      required: [items]
+
+    CreateExpenseSingleRequest:
+      type: object
+      properties:
+        payment_method_id:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        category:
+          type: string
+          nullable: true
+        amount_cents:
+          type: integer
+          format: int64
+      required: [date, description, amount_cents]
+
+    CreateExpenseInstallmentByTotalRequest:
+      type: object
+      properties:
+        payment_method_id:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        category:
+          type: string
+          nullable: true
+        installments_count:
+          type: integer
+          minimum: 2
+        total_amount_cents:
+          type: integer
+          format: int64
+      required: [date, description, installments_count, total_amount_cents]
+
+    CreateExpenseInstallmentByMonthlyRequest:
+      type: object
+      properties:
+        payment_method_id:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        category:
+          type: string
+          nullable: true
+        installments_count:
+          type: integer
+          minimum: 2
+        monthly_amount_cents:
+          type: integer
+          format: int64
+      required: [date, description, installments_count, monthly_amount_cents]
+
+    UpdateExpenseRequest:
+      type: object
+      properties:
+        payment_method_id:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        category:
+          type: string
+          nullable: true
+      required: [date, description, amount_cents]
+
+    ExpenseInstallmentGroupResponse:
+      type: object
+      properties:
+        installment_group_id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Expense'
+      required: [installment_group_id, items]
+
+    RecurringExpenseRequest:
+      type: object
+      properties:
+        payment_method_id:
+          type: string
+          nullable: true
+        start_month:
+          type: string
+          pattern: '^\d{4}-\d{2}$'
+        day_of_month:
+          type: integer
+          minimum: 1
+          maximum: 31
+        description:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        category:
+          type: string
+          nullable: true
+      required: [start_month, day_of_month, description, amount_cents]
+
+    RecurringExpense:
+      type: object
+      properties:
+        id:
+          type: string
+        payment_method_id:
+          type: string
+          nullable: true
+        start_month:
+          type: string
+        day_of_month:
+          type: integer
+        description:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        category:
+          type: string
+          nullable: true
+      required: [id, start_month, day_of_month, description, amount_cents]
+
+    RecurringExpenseListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecurringExpense'
+      required: [items]
+
+    MonthExpenseItem:
+      allOf:
+        - $ref: '#/components/schemas/Expense'
+        - type: object
+          properties:
+            source:
+              type: string
+              enum: [expense, recurring]
+            recurring_id:
+              type: string
+              nullable: true
+          required: [source]
+
+    MonthExpensesResponse:
+      type: object
+      properties:
+        month:
+          type: string
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonthExpenseItem'
+      required: [month, from, to, items]
