@@ -95,6 +95,9 @@ type RouterDeps struct {
 
 	// Config
 	AllowedOrigins []string
+	AccessTTL      time.Duration
+	RefreshTTL     time.Duration
+	CookieSecure   bool
 }
 
 type Router struct {
