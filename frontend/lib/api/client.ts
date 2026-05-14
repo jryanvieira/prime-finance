@@ -65,12 +65,19 @@ class ApiClient {
 
       if (isJson) {
         const data = await response.json()
-        error.message = data.error || data.message || error.message
-        error.code = data.code
+        // O backend retorna { error: { code, message } } ou { message, code }
+        if (data.error && typeof data.error === 'object') {
+          error.message = data.error.message || error.message
+          error.code = data.error.code
+        } else {
+          error.message = data.message || error.message
+          error.code = data.code
+        }
       }
 
-      // Token expirado ou inválido - redirecionar para login
-      if (response.status === 401) {
+      // Token expirado — redirecionar para login apenas fora das rotas de auth
+      const isAuthEndpoint = ['login', 'signup', 'refresh'].some(e => endpoint.includes(e))
+      if (response.status === 401 && !isAuthEndpoint) {
         localStorage.removeItem('prime-finance-token')
         localStorage.removeItem('prime-finance-auth')
         window.location.href = '/login'

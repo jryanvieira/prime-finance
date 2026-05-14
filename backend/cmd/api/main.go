@@ -13,8 +13,11 @@ import (
 
 	// Application layer
 	authApp "dash-fin/internal/application/auth"
+	budgetApp "dash-fin/internal/application/budget"
+	cashflowApp "dash-fin/internal/application/cashflow"
 	categoryApp "dash-fin/internal/application/category"
 	expenseApp "dash-fin/internal/application/expense"
+	goalApp "dash-fin/internal/application/goal"
 	incomeApp "dash-fin/internal/application/income"
 	pmApp "dash-fin/internal/application/paymentmethod"
 	reApp "dash-fin/internal/application/recurringexpense"
@@ -66,6 +69,8 @@ func main() {
 
 	// Repositories
 	userRepo := sqliteRepo.NewUserRepository(db)
+	budgetRepo := sqliteRepo.NewBudgetRepository(db)
+	goalRepo := sqliteRepo.NewGoalRepository(db)
 	expenseRepo := sqliteRepo.NewExpenseRepository(db)
 	incomeRepo := sqliteRepo.NewIncomeRepository(db)
 	categoryRepo := sqliteRepo.NewCategoryRepository(db)
@@ -96,6 +101,23 @@ func main() {
 	deleteInstGroupUC := expenseApp.NewDeleteInstallmentGroupUseCase(expenseRepo)
 	importCSVUC := expenseApp.NewImportCSVUseCase(expenseRepo)
 	monthExpensesUC := expenseApp.NewMonthExpensesUseCase(expenseRepo)
+	exportCSVUC := expenseApp.NewExportCSVUseCase(expenseRepo)
+	categorySummaryUC := expenseApp.NewCategorySummaryUseCase(expenseRepo)
+
+	getMeUC := authApp.NewGetMeUseCase(userRepo)
+	completeOnboardingUC := authApp.NewCompleteOnboardingUseCase(userRepo)
+
+	listBudgetsUC := budgetApp.NewListBudgetsUseCase(budgetRepo)
+	upsertBudgetUC := budgetApp.NewUpsertBudgetUseCase(budgetRepo)
+	deleteBudgetUC := budgetApp.NewDeleteBudgetUseCase(budgetRepo)
+
+	cashflowUC := cashflowApp.NewCashflowUseCase(expenseRepo, incomeRepo, reRepo)
+
+	listGoalsUC := goalApp.NewListGoalsUseCase(goalRepo)
+	createGoalUC := goalApp.NewCreateGoalUseCase(goalRepo)
+	updateGoalUC := goalApp.NewUpdateGoalUseCase(goalRepo)
+	contributeGoalUC := goalApp.NewContributeGoalUseCase(goalRepo)
+	deleteGoalUC := goalApp.NewDeleteGoalUseCase(goalRepo)
 
 	createIncomeUC := incomeApp.NewCreateIncomeUseCase(incomeRepo)
 	listIncomesUC := incomeApp.NewListIncomesUseCase(incomeRepo)
@@ -131,6 +153,23 @@ func main() {
 		DeleteInstGroupUC: deleteInstGroupUC,
 		ImportCSVUC:       importCSVUC,
 		MonthExpensesUC:   monthExpensesUC,
+		ExportCSVUC:       exportCSVUC,
+		CategorySummaryUC: categorySummaryUC,
+
+		GetMeUC:              getMeUC,
+		CompleteOnboardingUC: completeOnboardingUC,
+
+		ListBudgetsUC:  listBudgetsUC,
+		UpsertBudgetUC: upsertBudgetUC,
+		DeleteBudgetUC: deleteBudgetUC,
+
+		CashflowUC:       cashflowUC,
+
+		ListGoalsUC:      listGoalsUC,
+		CreateGoalUC:     createGoalUC,
+		UpdateGoalUC:     updateGoalUC,
+		ContributeGoalUC: contributeGoalUC,
+		DeleteGoalUC:     deleteGoalUC,
 
 		CreateIncomeUC: createIncomeUC,
 		ListIncomesUC:  listIncomesUC,

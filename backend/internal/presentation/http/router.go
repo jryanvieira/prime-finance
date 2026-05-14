@@ -5,8 +5,11 @@ import (
 	"time"
 
 	"dash-fin/internal/application/auth"
+	appBudget "dash-fin/internal/application/budget"
+	appCashflow "dash-fin/internal/application/cashflow"
 	appCategory "dash-fin/internal/application/category"
 	appExpense "dash-fin/internal/application/expense"
+	appGoal "dash-fin/internal/application/goal"
 	appIncome "dash-fin/internal/application/income"
 	appPM "dash-fin/internal/application/paymentmethod"
 	appRE "dash-fin/internal/application/recurringexpense"
@@ -19,10 +22,12 @@ import (
 // RouterDeps contains all dependencies for the HTTP router.
 type RouterDeps struct {
 	// Auth
-	SignupUC  *auth.SignupUseCase
-	LoginUC   *auth.LoginUseCase
-	RefreshUC *auth.RefreshUseCase
-	LogoutUC  *auth.LogoutUseCase
+	SignupUC             *auth.SignupUseCase
+	LoginUC              *auth.LoginUseCase
+	RefreshUC            *auth.RefreshUseCase
+	LogoutUC             *auth.LogoutUseCase
+	GetMeUC              *auth.GetMeUseCase
+	CompleteOnboardingUC *auth.CompleteOnboardingUseCase
 
 	// Expense
 	CreateExpenseUC      *appExpense.CreateExpenseUseCase
@@ -32,6 +37,8 @@ type RouterDeps struct {
 	DeleteInstGroupUC    *appExpense.DeleteInstallmentGroupUseCase
 	ImportCSVUC          *appExpense.ImportCSVUseCase
 	MonthExpensesUC      *appExpense.MonthExpensesUseCase
+	ExportCSVUC          *appExpense.ExportCSVUseCase
+	CategorySummaryUC    *appExpense.CategorySummaryUseCase
 
 	// Income
 	CreateIncomeUC *appIncome.CreateIncomeUseCase
@@ -62,6 +69,21 @@ type RouterDeps struct {
 	// For month handler: needs recurring + income repos directly
 	RecurringListUC *appRE.ListRecurringExpensesUseCase
 	IncomeListUC    *appIncome.ListIncomesUseCase
+
+	// Budgets
+	ListBudgetsUC   *appBudget.ListBudgetsUseCase
+	UpsertBudgetUC  *appBudget.UpsertBudgetUseCase
+	DeleteBudgetUC  *appBudget.DeleteBudgetUseCase
+
+	// Cashflow
+	CashflowUC *appCashflow.CashflowUseCase
+
+	// Goals
+	ListGoalsUC       *appGoal.ListGoalsUseCase
+	CreateGoalUC      *appGoal.CreateGoalUseCase
+	UpdateGoalUC      *appGoal.UpdateGoalUseCase
+	ContributeGoalUC  *appGoal.ContributeGoalUseCase
+	DeleteGoalUC      *appGoal.DeleteGoalUseCase
 
 	// Config
 	AllowedOrigins []string
@@ -100,6 +122,11 @@ func NewRouter(deps RouterDeps) *Router {
 	reHandler := newRecurringExpenseHandler(deps)
 	importHandler := newImportHandler(deps)
 	monthHandler := newMonthHandler(deps)
+	exportHandler := newExportHandler(deps)
+	budgetHandler := newBudgetHandler(deps)
+	goalHandler := newGoalHandler(deps)
+	userHandler := newUserHandler(deps)
+	cashflowHandler := newCashflowHandler(deps)
 
 	r.Route("/v1", func(r chi.Router) {
 		// Auth routes (no auth required)
@@ -148,8 +175,28 @@ func NewRouter(deps RouterDeps) *Router {
 				r.Delete("/{id}", categoryHandler.handleDelete)
 			})
 
+			r.Get("/users/me", userHandler.handleGetMe)
+			r.Patch("/users/me/onboarding", userHandler.handleCompleteOnboarding)
+
+			r.Route("/budgets", func(r chi.Router) {
+				r.Get("/", budgetHandler.handleList)
+				r.Put("/", budgetHandler.handleUpsert)
+				r.Delete("/{id}", budgetHandler.handleDelete)
+			})
+
+			r.Route("/goals", func(r chi.Router) {
+				r.Get("/", goalHandler.handleList)
+				r.Post("/", goalHandler.handleCreate)
+				r.Put("/{id}", goalHandler.handleUpdate)
+				r.Post("/{id}/contribute", goalHandler.handleContribute)
+				r.Delete("/{id}", goalHandler.handleDelete)
+			})
+
+			r.Get("/cashflow", cashflowHandler.handleGet)
 			r.Post("/import/csv", importHandler.handleImportCSV)
+			r.Get("/export/csv", exportHandler.handleExportCSV)
 			r.Get("/months/{month}/expenses", monthHandler.handleMonthExpenses)
+			r.Get("/months/{month}/category-summary", monthHandler.handleCategorySummary)
 			r.Delete("/installment-groups/{group_id}", expenseHandler.handleDeleteInstallmentGroup)
 		})
 	})

@@ -14,6 +14,7 @@ import {
 import { AlertCircle, ArrowRight, CheckCircle2, TrendingUp, Wallet, CheckSquare } from 'lucide-react'
 
 import { projectionsService } from '@/lib/api'
+import { toast } from 'sonner'
 import type { ProjectionsSummary, FutureMonthProjection } from '@/lib/api/types'
 import { formatCurrency } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
@@ -39,8 +40,8 @@ export default function ProjectionsPage() {
       setLoading(true)
       const data = await projectionsService.getFutureProjections(6)
       setSummary(data)
-    } catch (error) {
-      console.error('Erro ao carregar projeções', error)
+    } catch {
+      toast.error('Não foi possível carregar as projeções. Tente novamente.')
     } finally {
       setLoading(false)
     }

@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarClock, CreditCard, Receipt, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { ArrowRight, CalendarClock, CreditCard, Receipt, TrendingDown, TrendingUp, Wallet, AlertTriangle, Target } from 'lucide-react'
 
-import { dashboardService, expensesService, paymentMethodsService, recurringExpensesService, incomesService, type Expense, type Income } from '@/lib/api'
+import { dashboardService, expensesService, paymentMethodsService, recurringExpensesService, incomesService, categoriesService, budgetsService, goalsService, usersService, type Expense, type Income, type CategorySummaryItem, type Category, type Budget, type Goal } from '@/lib/api'
+import { toast } from 'sonner'
+import { OnboardingWizard } from '@/components/onboarding-wizard'
 import { formatCurrency } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatsCard } from '@/components/stats-card'
 import { ExpenseCard } from '@/components/expense-card'
 import { ExpenseChart } from '@/components/expense-chart'
+import { CategoryChart } from '@/components/category-chart'
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState('')
@@ -19,6 +22,11 @@ export default function DashboardPage() {
   const [paymentMethodsCount, setPaymentMethodsCount] = useState(0)
   const [monthIncomes, setMonthIncomes] = useState(0)
   const [chartData, setChartData] = useState<Array<{ month: string; total: number }>>([])
+  const [categorySummary, setCategorySummary] = useState<CategorySummaryItem[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [budgets, setBudgets] = useState<Budget[]>([])
+  const [goals, setGoals] = useState<Goal[]>([])
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,25 +46,41 @@ export default function DashboardPage() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
 
-      const [monthExpenses, recurring, paymentMethods, evolution, incomes] = await Promise.all([
+      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+      const me = await usersService.getMe().catch(() => null)
+      if (me && !me.onboarding_completed) setShowOnboarding(true)
+
+      const [monthExpenses, recurring, paymentMethods, evolution, incomes, catSummary, cats, budgetsData, goalsData] = await Promise.all([
         expensesService.getByMonth(now.getFullYear(), now.getMonth() + 1),
         recurringExpensesService.getMonthlyTotal(),
         paymentMethodsService.list(),
         dashboardService.getMonthlyEvolution(6),
         incomesService.list({ from: monthStart, to: monthEnd }),
+        dashboardService.getCategorySummary(monthKey),
+        categoriesService.list('expense'),
+        budgetsService.list(monthKey),
+        goalsService.list(),
       ])
       setExpenses(monthExpenses)
       setRecurringExpensesTotal(recurring)
       setPaymentMethodsCount(paymentMethods.length)
       setChartData(evolution)
       setMonthIncomes(incomes.reduce((sum, inc) => sum + inc.amount_cents, 0))
-    } catch (error) {
-      console.error('Erro ao carregar dashboard', error)
+      setCategorySummary(catSummary)
+      setCategories(cats)
+      setBudgets(budgetsData)
+      setGoals(goalsData)
+    } catch {
+      toast.error('Não foi possível carregar os dados do dashboard. Tente recarregar a página.')
       setExpenses([])
       setRecurringExpensesTotal(0)
       setPaymentMethodsCount(0)
       setChartData([])
       setMonthIncomes(0)
+      setCategorySummary([])
+      setCategories([])
+      setBudgets([])
+      setGoals([])
     } finally {
       setLoading(false)
     }
@@ -84,6 +108,10 @@ export default function DashboardPage() {
     .slice(0, 3)
 
   return (
+    <>
+    {showOnboarding && (
+      <OnboardingWizard onComplete={() => { setShowOnboarding(false); void loadDashboard() }} />
+    )}
     <div className="flex flex-col gap-8">
       {/* Header */}
       <div className="flex flex-col gap-1">
@@ -131,6 +159,86 @@ export default function DashboardPage() {
           icon={CreditCard}
         />
       </div>
+
+      {/* Budget Alerts */}
+      {budgets.filter((b) => b.percentage >= 80).length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <AlertTriangle className="size-4 text-amber-500" />
+              Alertas de orçamento
+            </h2>
+            <Link href="/orcamentos">
+              <Button variant="ghost" size="sm" className="gap-1 text-xs">
+                Ver todos <ArrowRight className="size-3" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {budgets.filter((b) => b.percentage >= 80).map((b) => (
+              <Card key={b.id} className={b.percentage >= 100 ? 'border-red-500/50' : 'border-amber-500/50'}>
+                <CardContent className="pt-4 pb-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{b.category_name}</span>
+                    <span className={b.percentage >= 100 ? 'text-red-500 font-semibold' : 'text-amber-500 font-semibold'}>
+                      {b.percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${b.percentage >= 100 ? 'bg-red-500' : 'bg-amber-500'}`}
+                      style={{ width: `${Math.min(b.percentage, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {formatCurrency(b.spent_cents)} de {formatCurrency(b.amount_cents)}
+                  </span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Goals widget */}
+      {goals.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <Target className="size-4 text-primary" />
+              Metas financeiras
+            </h2>
+            <Link href="/metas">
+              <Button variant="ghost" size="sm" className="gap-1 text-xs">
+                Ver todas <ArrowRight className="size-3" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {goals.slice(0, 3).map((g) => (
+              <Card key={g.id} className={g.percentage >= 100 ? 'border-emerald-500/50' : ''}>
+                <CardContent className="pt-4 pb-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium truncate">{g.name}</span>
+                    <span className={`shrink-0 ml-2 font-semibold ${g.percentage >= 100 ? 'text-emerald-500' : 'text-primary'}`}>
+                      {g.percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${g.percentage >= 100 ? 'bg-emerald-500' : 'bg-primary'}`}
+                      style={{ width: `${Math.min(g.percentage, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {formatCurrency(g.current_amount_cents)} de {formatCurrency(g.target_amount_cents)}
+                  </span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Chart and Upcoming */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -181,6 +289,9 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* Category Breakdown */}
+      <CategoryChart data={categorySummary} categories={categories} />
+
       {/* Recent Transactions */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
@@ -209,5 +320,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }

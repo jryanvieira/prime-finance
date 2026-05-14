@@ -33,12 +33,13 @@ VALUES (?, ?, ?, ?);
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.User, error) {
 	var id, name, emailStr, passwordHash string
+	var onboarding int
 	err := r.db.QueryRowContext(ctx, `
-SELECT id, name, email, password_hash
+SELECT id, name, email, password_hash, COALESCE(onboarding_completed, 0)
 FROM users
 WHERE email = ?
 LIMIT 1;
-`, email).Scan(&id, &name, &emailStr, &passwordHash)
+`, email).Scan(&id, &name, &emailStr, &passwordHash, &onboarding)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, user.ErrUserNotFound
 	}
@@ -52,9 +53,44 @@ LIMIT 1;
 	}
 
 	return &user.User{
-		ID:           id,
-		Name:         name,
-		Email:        emailVO,
-		PasswordHash: passwordHash,
+		ID:                  id,
+		Name:                name,
+		Email:               emailVO,
+		PasswordHash:        passwordHash,
+		OnboardingCompleted: onboarding == 1,
 	}, nil
+}
+
+func (r *UserRepository) GetByID(ctx context.Context, id string) (*user.User, error) {
+	var uid, name, emailStr, passwordHash string
+	var onboarding int
+	err := r.db.QueryRowContext(ctx, `
+SELECT id, name, email, password_hash, COALESCE(onboarding_completed, 0)
+FROM users WHERE id = ? LIMIT 1;
+`, id).Scan(&uid, &name, &emailStr, &passwordHash, &onboarding)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, user.ErrUserNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	emailVO, err := user.NewEmail(emailStr)
+	if err != nil {
+		return nil, err
+	}
+	return &user.User{
+		ID:                  uid,
+		Name:                name,
+		Email:               emailVO,
+		PasswordHash:        passwordHash,
+		OnboardingCompleted: onboarding == 1,
+	}, nil
+}
+
+func (r *UserRepository) CompleteOnboarding(ctx context.Context, userID string) error {
+	_, err := r.db.ExecContext(ctx, `
+UPDATE users SET onboarding_completed = 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE id = ?;
+`, userID)
+	return err
 }

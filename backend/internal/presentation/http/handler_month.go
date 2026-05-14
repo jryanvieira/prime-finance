@@ -12,16 +12,18 @@ import (
 )
 
 type monthHandler struct {
-	monthExpensesUC *appExpense.MonthExpensesUseCase
-	recurringListUC *appRE.ListRecurringExpensesUseCase
-	incomeListUC    *appIncome.ListIncomesUseCase
+	monthExpensesUC   *appExpense.MonthExpensesUseCase
+	categorySummaryUC *appExpense.CategorySummaryUseCase
+	recurringListUC   *appRE.ListRecurringExpensesUseCase
+	incomeListUC      *appIncome.ListIncomesUseCase
 }
 
 func newMonthHandler(deps RouterDeps) *monthHandler {
 	return &monthHandler{
-		monthExpensesUC: deps.MonthExpensesUC,
-		recurringListUC: deps.RecurringListUC,
-		incomeListUC:    deps.IncomeListUC,
+		monthExpensesUC:   deps.MonthExpensesUC,
+		categorySummaryUC: deps.CategorySummaryUC,
+		recurringListUC:   deps.RecurringListUC,
+		incomeListUC:      deps.IncomeListUC,
 	}
 }
 
@@ -129,4 +131,23 @@ func (h *monthHandler) handleMonthExpenses(w http.ResponseWriter, r *http.Reques
 		"total_incomes":  totalIncomes,
 		"balance":        totalIncomes - totalExpenses,
 	})
+}
+
+func (h *monthHandler) handleCategorySummary(w http.ResponseWriter, r *http.Request) {
+	userID, ok := requireUserID(r)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "missing user")
+		return
+	}
+
+	monthStr := chi.URLParam(r, "month")
+	items, err := h.categorySummaryUC.Execute(r.Context(), appExpense.CategorySummaryRequest{
+		UserID: userID, Month: monthStr,
+	})
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "validation_error", "invalid month (expected YYYY-MM)")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }

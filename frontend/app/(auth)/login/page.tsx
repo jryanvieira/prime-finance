@@ -15,7 +15,7 @@ import { authService } from '@/lib/api'
 
 const loginSchema = z.object({
   email: z.string().email('Digite um email válido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
 })
 
 type LoginForm = z.infer<typeof loginSchema>
@@ -42,7 +42,14 @@ export default function LoginPage() {
       await authService.login(data)
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err?.message || err?.error || 'Ocorreu um erro. Tente novamente.')
+      const code = err?.code || ''
+      if (code === 'invalid_credentials' || err?.status === 401) {
+        setError('Email ou senha incorretos. Verifique seus dados e tente novamente.')
+      } else if (err?.message === 'Failed to fetch' || err?.code === 'ECONNREFUSED') {
+        setError('Não foi possível conectar ao servidor. Tente novamente em instantes.')
+      } else {
+        setError(err?.message || 'Ocorreu um erro inesperado. Tente novamente.')
+      }
     } finally {
       setIsLoading(false)
     }

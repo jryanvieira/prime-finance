@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,7 +38,7 @@ export default function RecuperarSenhaPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000))
       setIsSuccess(true)
     } catch {
-      // Error handling
+      toast.error('Não foi possível enviar o email. Tente novamente em instantes.')
     } finally {
       setIsLoading(false)
     }

@@ -8,12 +8,13 @@ import (
 
 // User is the aggregate root representing a system user.
 type User struct {
-	ID           string
-	Name         string
-	Email        Email
-	PasswordHash string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                   string
+	Name                 string
+	Email                Email
+	PasswordHash         string
+	OnboardingCompleted  bool
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }
 
 // PasswordHasher defines how we hash passwords without depending on a specific library in the domain.

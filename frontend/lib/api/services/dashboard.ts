@@ -4,6 +4,7 @@ import type {
   MonthlyReport,
   CategoryTotal,
   PaymentMethodTotal,
+  CategorySummaryItem,
 } from '../types'
 
 const USE_MOCK = false
@@ -125,6 +126,12 @@ export const dashboardService = {
       })
     }
     return out
+  },
+
+  async getCategorySummary(month?: string): Promise<CategorySummaryItem[]> {
+    const m = month || new Date().toISOString().slice(0, 7)
+    const data = await api.get<{ items: CategorySummaryItem[] | null }>(`/v1/months/${m}/category-summary`)
+    return Array.isArray(data.items) ? data.items : []
   },
 
   /**

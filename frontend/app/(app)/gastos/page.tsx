@@ -10,6 +10,7 @@ import {
   CreditCardIcon,
   BanknoteIcon,
   UploadIcon,
+  DownloadIcon,
   FileSpreadsheetIcon,
   CheckCircle2Icon,
   TrendingDown,
@@ -56,6 +57,7 @@ import {
   paymentMethodsService,
   categoriesService,
   importService,
+  exportService,
   type Expense,
   type PaymentMethod,
   type Category,
@@ -63,6 +65,7 @@ import {
 } from '@/lib/api'
 import { formatCurrency, formatDate } from '@/lib/mock-data'
 import { StatsCard } from '@/components/stats-card'
+import { toast } from 'sonner'
 
 export default function GastosPage() {
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -81,6 +84,8 @@ export default function GastosPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+
+  const [exportLoading, setExportLoading] = useState(false)
 
   // Import state
   const [isImportOpen, setIsImportOpen] = useState(false)
@@ -134,6 +139,21 @@ export default function GastosPage() {
       setExpenses(expData)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleExportCSV = async () => {
+    try {
+      setExportLoading(true)
+      const y = currentMonth.getFullYear()
+      const m = currentMonth.getMonth()
+      const from = new Date(y, m, 1).toISOString().split('T')[0]
+      const to = new Date(y, m + 1, 0).toISOString().split('T')[0]
+      await exportService.downloadCSV(from, to)
+    } catch {
+      toast.error('Não foi possível exportar o CSV. Tente novamente.')
+    } finally {
+      setExportLoading(false)
     }
   }
 
@@ -237,8 +257,8 @@ export default function GastosPage() {
       )
       setImportResult(result)
       await loadExpenses()
-    } catch (error: any) {
-      alert(error.message || 'Erro ao importar CSV')
+    } catch (err: any) {
+      toast.error(err?.message || 'Não foi possível importar o arquivo. Verifique o formato e tente novamente.')
     } finally {
       setImportLoading(false)
     }
@@ -297,6 +317,17 @@ export default function GastosPage() {
         </div>
 
         <div className="flex gap-2">
+          {viewMode === 'monthly' && (
+            <Button
+              variant="outline"
+              className="shadow-sm"
+              onClick={() => void handleExportCSV()}
+              disabled={exportLoading}
+            >
+              <DownloadIcon className="mr-2 size-4" />
+              {exportLoading ? 'Exportando...' : 'Exportar CSV'}
+            </Button>
+          )}
           {/* Import CSV Dialog */}
           <Dialog
             open={isImportOpen}

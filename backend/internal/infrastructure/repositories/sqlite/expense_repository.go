@@ -196,3 +196,27 @@ WHERE user_id = ? AND installment_group_id = ?;
 	}
 	return res.RowsAffected()
 }
+
+func (r *ExpenseRepository) CategorySummary(ctx context.Context, userID, from, to string) ([]*expense.CategorySummaryItem, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT COALESCE(category, 'Outros') AS cat, SUM(amount_cents), COUNT(*)
+FROM expenses
+WHERE user_id = ? AND date >= ? AND date <= ?
+GROUP BY cat
+ORDER BY SUM(amount_cents) DESC;
+`, userID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*expense.CategorySummaryItem
+	for rows.Next() {
+		var item expense.CategorySummaryItem
+		if err := rows.Scan(&item.Category, &item.TotalCents, &item.TransactionCount); err != nil {
+			return nil, err
+		}
+		out = append(out, &item)
+	}
+	return out, rows.Err()
+}
