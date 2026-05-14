@@ -18,4 +18,5 @@ type Repository interface {
 	Update(ctx context.Context, e *Expense) error
 	Delete(ctx context.Context, userID, id string) error
 	DeleteByInstallmentGroup(ctx context.Context, userID, groupID string) (int64, error)
+	CategoryHistory(ctx context.Context, userID string, from, to string) ([]*CategoryHistoryRaw, error)
 }
