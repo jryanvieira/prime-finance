@@ -4,9 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"dash-fin/internal/domain/budget"
 )
+
+func parseTime(s string) time.Time {
+	t, _ := time.Parse(time.RFC3339Nano, s)
+	return t
+}
 
 type BudgetRepository struct {
 	db *sql.DB
@@ -31,9 +37,12 @@ ORDER BY created_at ASC;
 	var out []*budget.Budget
 	for rows.Next() {
 		var b budget.Budget
-		if err := rows.Scan(&b.ID, &b.UserID, &b.CategoryID, &b.Month, &b.AmountCents, &b.CreatedAt, &b.UpdatedAt); err != nil {
+		var ct, ut string
+		if err := rows.Scan(&b.ID, &b.UserID, &b.CategoryID, &b.Month, &b.AmountCents, &ct, &ut); err != nil {
 			return nil, err
 		}
+		b.CreatedAt = parseTime(ct)
+		b.UpdatedAt = parseTime(ut)
 		out = append(out, &b)
 	}
 	return out, rows.Err()
@@ -68,9 +77,12 @@ ORDER BY b.created_at ASC;
 		var b budget.Budget
 		var spent int64
 		var catName string
-		if err := rows.Scan(&b.ID, &b.UserID, &b.CategoryID, &b.Month, &b.AmountCents, &b.CreatedAt, &b.UpdatedAt, &catName, &spent); err != nil {
+		var ct, ut string
+		if err := rows.Scan(&b.ID, &b.UserID, &b.CategoryID, &b.Month, &b.AmountCents, &ct, &ut, &catName, &spent); err != nil {
 			return nil, err
 		}
+		b.CreatedAt = parseTime(ct)
+		b.UpdatedAt = parseTime(ut)
 		out = append(out, budget.BudgetWithSpent{Budget: &b, SpentCents: spent, CatName: catName})
 	}
 	return out, rows.Err()
@@ -103,10 +115,13 @@ DELETE FROM budgets WHERE id = ? AND user_id = ?;
 
 func (r *BudgetRepository) GetByID(ctx context.Context, userID, id string) (*budget.Budget, error) {
 	var b budget.Budget
+	var ct, ut string
 	err := r.db.QueryRowContext(ctx, `
 SELECT id, user_id, category_id, month, amount_cents, created_at, updated_at
 FROM budgets WHERE id = ? AND user_id = ?;
-`, id, userID).Scan(&b.ID, &b.UserID, &b.CategoryID, &b.Month, &b.AmountCents, &b.CreatedAt, &b.UpdatedAt)
+`, id, userID).Scan(&b.ID, &b.UserID, &b.CategoryID, &b.Month, &b.AmountCents, &ct, &ut)
+	b.CreatedAt = parseTime(ct)
+	b.UpdatedAt = parseTime(ut)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, budget.ErrBudgetNotFound
 	}

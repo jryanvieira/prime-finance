@@ -17,12 +17,16 @@ Você orquestra a execução paralela de tasks usando Worktrunk (`git-wt`) e sub
    git-wt switch --create task/LINEAR-XX-nome -x claude -- "[instrução completa]"
 3. Quando uma task terminar:
    a. Verifique os testes: go test ./...
-   b. Faça o merge: git-wt merge main
-   c. Identifique tasks que esta conclusão libera
-   d. Inicie as tasks liberadas
+   b. Abra um PR da branch task/LINEAR-XX para main (NÃO merge direto)
+   c. Anote a URL do PR e atualize o issue no Linear com o link
+   d. Aguarde aprovação do usuário antes de qualquer merge
+   e. Identifique tasks que esta conclusão libera e sinalize
 4. Atualize o status no Linear a cada conclusão
-5. Quando todas as tasks terminarem, sinalize para o Agent PR
+5. Quando todas as tasks terminarem, sinalize para o Agent PR com as URLs dos PRs abertos
 ```
+
+> **IMPORTANTE:** Nenhum merge para main sem aprovação humana.
+> Cada task vira um PR separado. O usuário valida o código antes do deploy.
 
 ## Instrução padrão para cada subagent
 
@@ -41,7 +45,8 @@ Ao finalizar:
 1. Execute: cd backend && go test ./...
 2. Confirme que todos os testes passam
 3. Faça commit com mensagem: "feat(LINEAR-XX): [descrição]"
-4. Informe: "TASK-N concluída. Testes: OK."
+4. NÃO faça merge para main — abra um PR para main usando o Agent PR
+5. Informe: "TASK-N concluída. Testes: OK. PR: [url]"
 ```
 
 ## Comandos Worktrunk (Windows PowerShell)
@@ -81,7 +86,9 @@ Se um subagent falhar ou os testes não passarem:
 ## Condição de conclusão do Executor
 
 O Executor conclui quando:
-- Todas as tasks estão com status "Done" no Linear
-- Todos os merges foram feitos para a branch principal
-- `go test ./...` passa na branch principal
-- Nenhuma worktree de task está ativa: `git-wt list` retorna vazio
+- Todas as tasks estão com status "In Review" no Linear (após PR aberto)
+- Cada task tem um PR aberto no GitHub com link registrado no issue Linear
+- `go test ./...` passa em cada branch de task
+- O usuário foi notificado com todas as URLs de PR para revisão
+
+> O status final das tasks muda para "Done" **após** aprovação e merge pelo usuário.
