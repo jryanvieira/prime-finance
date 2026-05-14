@@ -220,3 +220,32 @@ ORDER BY SUM(amount_cents) DESC;
 	}
 	return out, rows.Err()
 }
+
+func (r *ExpenseRepository) CategoryHistory(ctx context.Context, userID string, from, to string) ([]*expense.CategoryHistoryRaw, error) {
+	query := `
+		SELECT
+			COALESCE(category, 'Sem categoria') AS category,
+			strftime('%Y-%m', date) AS month,
+			SUM(amount_cents) AS total_cents
+		FROM expenses
+		WHERE user_id = ?
+		  AND date >= ?
+		  AND date <= ?
+		GROUP BY category, month
+		ORDER BY category, month
+	`
+	rows, err := r.db.QueryContext(ctx, query, userID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []*expense.CategoryHistoryRaw
+	for rows.Next() {
+		item := &expense.CategoryHistoryRaw{}
+		if err := rows.Scan(&item.Category, &item.Month, &item.TotalCents); err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+	return result, rows.Err()
+}
