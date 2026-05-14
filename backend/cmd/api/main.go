@@ -12,6 +12,7 @@ import (
 	"time"
 
 	// Application layer
+	alertApp "dash-fin/internal/application/alert"
 	authApp "dash-fin/internal/application/auth"
 	budgetApp "dash-fin/internal/application/budget"
 	cashflowApp "dash-fin/internal/application/cashflow"
@@ -33,6 +34,8 @@ import (
 
 	// Presentation layer
 	httpPresentation "dash-fin/internal/presentation/http"
+
+	"dash-fin/pkg/timeutil"
 )
 
 func main() {
@@ -112,6 +115,9 @@ func main() {
 	deleteBudgetUC := budgetApp.NewDeleteBudgetUseCase(budgetRepo)
 
 	cashflowUC := cashflowApp.NewCashflowUseCase(expenseRepo, incomeRepo, reRepo)
+	monthlySummaryUC := cashflowApp.NewMonthlySummaryUseCase(expenseRepo, incomeRepo, budgetRepo, reRepo)
+	categoryHistoryUC := expenseApp.NewCategoryHistoryUseCase(expenseRepo)
+	listAlertsUC := alertApp.NewListAlertsUseCase(reRepo, expenseRepo, timeutil.RealClock{})
 
 	listGoalsUC := goalApp.NewListGoalsUseCase(goalRepo)
 	createGoalUC := goalApp.NewCreateGoalUseCase(goalRepo)
@@ -163,7 +169,10 @@ func main() {
 		UpsertBudgetUC: upsertBudgetUC,
 		DeleteBudgetUC: deleteBudgetUC,
 
-		CashflowUC:       cashflowUC,
+		CashflowUC:        cashflowUC,
+		MonthlySummaryUC:  monthlySummaryUC,
+		CategoryHistoryUC: categoryHistoryUC,
+		ListAlertsUC:      listAlertsUC,
 
 		ListGoalsUC:      listGoalsUC,
 		CreateGoalUC:     createGoalUC,

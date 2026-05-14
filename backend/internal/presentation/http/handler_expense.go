@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -13,20 +14,22 @@ import (
 )
 
 type expenseHandler struct {
-	createUC       *appExpense.CreateExpenseUseCase
-	listUC         *appExpense.ListExpensesUseCase
-	updateUC       *appExpense.UpdateExpenseUseCase
-	deleteUC       *appExpense.DeleteExpenseUseCase
-	deleteGroupUC  *appExpense.DeleteInstallmentGroupUseCase
+	createUC          *appExpense.CreateExpenseUseCase
+	listUC            *appExpense.ListExpensesUseCase
+	updateUC          *appExpense.UpdateExpenseUseCase
+	deleteUC          *appExpense.DeleteExpenseUseCase
+	deleteGroupUC     *appExpense.DeleteInstallmentGroupUseCase
+	categoryHistoryUC *appExpense.CategoryHistoryUseCase
 }
 
 func newExpenseHandler(deps RouterDeps) *expenseHandler {
 	return &expenseHandler{
-		createUC:      deps.CreateExpenseUC,
-		listUC:        deps.ListExpensesUC,
-		updateUC:      deps.UpdateExpenseUC,
-		deleteUC:      deps.DeleteExpenseUC,
-		deleteGroupUC: deps.DeleteInstGroupUC,
+		createUC:          deps.CreateExpenseUC,
+		listUC:            deps.ListExpensesUC,
+		updateUC:          deps.UpdateExpenseUC,
+		deleteUC:          deps.DeleteExpenseUC,
+		deleteGroupUC:     deps.DeleteInstGroupUC,
+		categoryHistoryUC: deps.CategoryHistoryUC,
 	}
 }
 
@@ -141,6 +144,38 @@ func (h *expenseHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *expenseHandler) handleCategoryHistory(w http.ResponseWriter, r *http.Request) {
+	userID, ok := requireUserID(r)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "missing user")
+		return
+	}
+
+	months := 6
+	if m := r.URL.Query().Get("months"); m != "" {
+		var n int
+		if _, err := fmt.Sscanf(m, "%d", &n); err != nil || n < 1 || n > 12 {
+			writeError(w, http.StatusBadRequest, "validation_error", "months must be between 1 and 12")
+			return
+		}
+		months = n
+	}
+
+	resp, err := h.categoryHistoryUC.Execute(r.Context(), appExpense.CategoryHistoryRequest{
+		UserID: userID,
+		Months: months,
+	})
+	if err != nil {
+		if errors.Is(err, appExpense.ErrInvalidMonthsParam) {
+			writeError(w, http.StatusBadRequest, "validation_error", err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "failed to get category history")
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *expenseHandler) handleDeleteInstallmentGroup(w http.ResponseWriter, r *http.Request) {

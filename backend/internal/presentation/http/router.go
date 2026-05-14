@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"dash-fin/internal/application/auth"
+	appAlert "dash-fin/internal/application/alert"
 	appBudget "dash-fin/internal/application/budget"
 	appCashflow "dash-fin/internal/application/cashflow"
 	appCategory "dash-fin/internal/application/category"
@@ -76,7 +77,14 @@ type RouterDeps struct {
 	DeleteBudgetUC  *appBudget.DeleteBudgetUseCase
 
 	// Cashflow
-	CashflowUC *appCashflow.CashflowUseCase
+	CashflowUC       *appCashflow.CashflowUseCase
+	MonthlySummaryUC *appCashflow.MonthlySummaryUseCase
+
+	// CategoryHistory
+	CategoryHistoryUC *appExpense.CategoryHistoryUseCase
+
+	// Alerts
+	ListAlertsUC *appAlert.ListAlertsUseCase
 
 	// Goals
 	ListGoalsUC       *appGoal.ListGoalsUseCase
@@ -126,6 +134,7 @@ func NewRouter(deps RouterDeps) *Router {
 	budgetHandler := newBudgetHandler(deps)
 	goalHandler := newGoalHandler(deps)
 	userHandler := newUserHandler(deps)
+	alertHandler := newAlertHandler(deps)
 	cashflowHandler := newCashflowHandler(deps)
 
 	r.Route("/v1", func(r chi.Router) {
@@ -193,6 +202,9 @@ func NewRouter(deps RouterDeps) *Router {
 			})
 
 			r.Get("/cashflow", cashflowHandler.handleGet)
+			r.Get("/months/{month}/summary", cashflowHandler.handleMonthlySummary)
+			r.Get("/categories/history", expenseHandler.handleCategoryHistory)
+			r.Get("/alerts", alertHandler.handleListAlerts)
 			r.Post("/import/csv", importHandler.handleImportCSV)
 			r.Get("/export/csv", exportHandler.handleExportCSV)
 			r.Get("/months/{month}/expenses", monthHandler.handleMonthExpenses)
