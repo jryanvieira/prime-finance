@@ -2,6 +2,7 @@ export interface User {
   id: string
   email: string
   name?: string
+  onboarding_completed?: boolean
 }
 
 export interface LoginRequest {
@@ -202,12 +203,84 @@ export interface UpdateIncomeRequest {
 }
 
 // Import
+export type ImportResult = ImportCSVResponse
+
 export interface ImportCSVResponse {
   imported: number
   updated: number
   skipped_duplicates: number
   skipped_ignored: number
   items: Expense[]
+}
+
+// Budgets
+export interface Budget {
+  id: string
+  category_id: string
+  category_name: string
+  month: string
+  amount_cents: number
+  spent_cents: number
+  percentage: number
+}
+
+export interface UpsertBudgetRequest {
+  category_id: string
+  month: string
+  amount_cents: number
+}
+
+// Goals
+export interface Goal {
+  id: string
+  name: string
+  target_amount_cents: number
+  current_amount_cents: number
+  percentage: number
+  deadline?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateGoalRequest {
+  name: string
+  target_amount_cents: number
+  deadline?: string | null
+}
+
+export interface UpdateGoalRequest {
+  name: string
+  target_amount_cents: number
+  deadline?: string | null
+}
+
+export interface ContributeGoalRequest {
+  amount_cents: number
+}
+
+// Category Summary
+export interface CategorySummaryItem {
+  category: string
+  total_cents: number
+  transaction_count: number
+  percentage: number
+}
+
+// Cashflow
+export interface CashflowDay {
+  date: string
+  income_cents: number
+  expense_cents: number
+  net_cents: number
+  cumulative_balance_cents: number
+}
+
+export interface CashflowResponse {
+  month: string
+  days: CashflowDay[]
+  total_income_cents: number
+  total_expense_cents: number
+  net_balance_cents: number
 }
 
 // Projections

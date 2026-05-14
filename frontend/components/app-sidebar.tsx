@@ -13,6 +13,8 @@ import {
   Menu,
   X,
   TrendingUp,
+  Target,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -22,9 +24,12 @@ import { Button } from '@/components/ui/button'
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Projeções', href: '/projecoes', icon: TrendingUp },
+  { name: 'Fluxo de Caixa', href: '/fluxo-caixa', icon: ArrowLeftRight },
+  { name: 'Metas', href: '/metas', icon: Target },
   { name: 'Gastos', href: '/gastos', icon: Receipt },
   { name: 'Receitas', href: '/receitas', icon: Wallet },
   { name: 'Calendario', href: '/calendario', icon: CalendarDays },
+  { name: 'Orçamentos', href: '/orcamentos', icon: Target },
   { name: 'Gastos Fixos', href: '/gastos-fixos', icon: CalendarClock },
   { name: 'Meios de Pagamento', href: '/meios-pagamento', icon: CreditCard },
 ]

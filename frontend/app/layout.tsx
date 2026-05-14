@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -10,6 +11,12 @@ export const metadata: Metadata = {
   title: 'Prime Finance - Controle suas finanças',
   description: 'Aplicativo de finanças pessoais para controle de gastos, despesas fixas e meios de pagamento',
   generator: 'v0.app',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Prime Finance',
+  },
   icons: {
     icon: [
       {
@@ -36,8 +43,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
+      <head>
+        <meta name="theme-color" content="#09090b" />
+      </head>
       <body className="font-sans antialiased">
         {children}
+        <Toaster richColors position="top-right" />
         <Analytics />
       </body>
     </html>

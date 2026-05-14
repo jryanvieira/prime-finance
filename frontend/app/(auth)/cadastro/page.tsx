@@ -17,7 +17,7 @@ const registerSchema = z
   .object({
     name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
     email: z.string().email('Digite um email válido'),
-    password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+    password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -54,7 +54,16 @@ export default function CadastroPage() {
       })
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err?.message || err?.error || 'Ocorreu um erro. Tente novamente.')
+      const code = err?.code || ''
+      if (code === 'email_already_exists' || err?.status === 409) {
+        setError('Este email já está em uso. Tente fazer login ou use outro email.')
+      } else if (code === 'validation_error') {
+        setError(err?.message || 'Dados inválidos. Verifique as informações e tente novamente.')
+      } else if (err?.message === 'Failed to fetch' || err?.code === 'ECONNREFUSED') {
+        setError('Não foi possível conectar ao servidor. Tente novamente em instantes.')
+      } else {
+        setError(err?.message || 'Ocorreu um erro inesperado. Tente novamente.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -107,7 +116,7 @@ export default function CadastroPage() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
                 autoComplete="new-password"
                 aria-invalid={!!errors.password}
                 className="pr-10"
