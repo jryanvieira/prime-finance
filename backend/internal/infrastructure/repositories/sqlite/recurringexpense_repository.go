@@ -86,3 +86,31 @@ WHERE id = ? AND user_id = ?;
 	}
 	return nil
 }
+
+func (r *RecurringExpenseRepository) ListAll(ctx context.Context) ([]*recurringexpense.RecurringExpense, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT id, user_id, payment_method_id, start_month, day_of_month, description, amount_cents, category
+FROM recurring_expenses
+ORDER BY created_at DESC;`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*recurringexpense.RecurringExpense
+	for rows.Next() {
+		var re recurringexpense.RecurringExpense
+		var pm, cat sql.NullString
+		if err := rows.Scan(&re.ID, &re.UserID, &pm, &re.StartMonth, &re.DayOfMonth, &re.Description, &re.AmountCents, &cat); err != nil {
+			return nil, err
+		}
+		if pm.Valid {
+			re.PaymentMethodID = &pm.String
+		}
+		if cat.Valid {
+			re.Category = &cat.String
+		}
+		out = append(out, &re)
+	}
+	return out, rows.Err()
+}

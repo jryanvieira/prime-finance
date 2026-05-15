@@ -8,4 +8,5 @@ type Repository interface {
 	List(ctx context.Context, userID string) ([]*RecurringExpense, error)
 	Update(ctx context.Context, re *RecurringExpense) error
 	Delete(ctx context.Context, userID, id string) error
+	ListAll(ctx context.Context) ([]*RecurringExpense, error)
 }
