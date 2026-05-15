@@ -16,7 +16,7 @@ const WEEKDAYS_SHORT = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 const MONTHS = [
   'Janeiro',
   'Fevereiro',
-  'Marco',
+  'Março',
   'Abril',
   'Maio',
   'Junho',

@@ -14,6 +14,7 @@ import {
   X,
   TrendingUp,
   Target,
+  PieChart,
   ArrowLeftRight,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -29,7 +30,7 @@ const navigation = [
   { name: 'Gastos', href: '/gastos', icon: Receipt },
   { name: 'Receitas', href: '/receitas', icon: Wallet },
   { name: 'Calendario', href: '/calendario', icon: CalendarDays },
-  { name: 'Orçamentos', href: '/orcamentos', icon: Target },
+  { name: 'Orçamentos', href: '/orcamentos', icon: PieChart },
   { name: 'Gastos Fixos', href: '/gastos-fixos', icon: CalendarClock },
   { name: 'Meios de Pagamento', href: '/meios-pagamento', icon: CreditCard },
 ]
