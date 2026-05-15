@@ -94,3 +94,34 @@ WHERE id = ?;
 `, userID)
 	return err
 }
+
+func (r *UserRepository) ListAll(ctx context.Context) ([]*user.User, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT id, name, email, password_hash, COALESCE(onboarding_completed, 0)
+FROM users ORDER BY created_at;`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*user.User
+	for rows.Next() {
+		var uid, name, emailStr, passwordHash string
+		var onboarding int
+		if err := rows.Scan(&uid, &name, &emailStr, &passwordHash, &onboarding); err != nil {
+			return nil, err
+		}
+		emailVO, err := user.NewEmail(emailStr)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, &user.User{
+			ID:                  uid,
+			Name:                name,
+			Email:               emailVO,
+			PasswordHash:        passwordHash,
+			OnboardingCompleted: onboarding == 1,
+		})
+	}
+	return users, rows.Err()
+}
