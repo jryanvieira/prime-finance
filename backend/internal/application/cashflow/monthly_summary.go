@@ -89,7 +89,7 @@ func (uc *MonthlySummaryUseCase) Execute(ctx context.Context, req MonthlySummary
 		return nil, err
 	}
 
-	budgets, err := uc.budgetRepo.List(ctx, req.UserID, req.Month)
+	budgets, err := uc.budgetRepo.ListWithSpent(ctx, req.UserID, req.Month)
 	if err != nil {
 		return nil, err
 	}
@@ -142,10 +142,10 @@ func (uc *MonthlySummaryUseCase) Execute(ctx context.Context, req MonthlySummary
 		return categorySummary[i].TotalCents > categorySummary[j].TotalCents
 	})
 
-	// Budget comparison: index budgets by CategoryID
+	// Budget comparison: index budgets by category name
 	budgetByCat := map[string]int64{}
 	for _, b := range budgets {
-		budgetByCat[b.CategoryID] += b.AmountCents
+		budgetByCat[b.CatName] += b.Budget.AmountCents
 	}
 
 	budgetComparison := make([]BudgetComparisonItem, 0, len(categorySummary))
