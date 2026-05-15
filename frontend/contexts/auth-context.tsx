@@ -1,15 +1,14 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
-import { mockUser, type User } from '@/lib/mock-data'
+import { authService, usersService } from '@/lib/api'
+import type { User } from '@/lib/api'
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<boolean>
-  register: (name: string, email: string, password: string) => Promise<boolean>
   logout: () => void
+  refetchUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -19,62 +18,40 @@ const AUTH_KEY = 'prime-finance-auth'
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
+
+  const refetchUser = async () => {
+    try {
+      const me = await usersService.getMe()
+      setUser(me)
+      localStorage.setItem(AUTH_KEY, JSON.stringify(me))
+    } catch {
+      // unauthenticated — keep whatever is in state
+    }
+  }
 
   useEffect(() => {
-    // Verificar se há usuário salvo no localStorage
     const savedAuth = localStorage.getItem(AUTH_KEY)
     if (savedAuth) {
       try {
-        const parsed = JSON.parse(savedAuth)
-        setUser(parsed)
+        setUser(JSON.parse(savedAuth) as User)
       } catch {
         localStorage.removeItem(AUTH_KEY)
       }
     }
-    setIsLoading(false)
+    // Try to refresh from API silently
+    void usersService.getMe().then((me) => {
+      setUser(me)
+      localStorage.setItem(AUTH_KEY, JSON.stringify(me))
+    }).catch(() => {}).finally(() => setIsLoading(false))
   }, [])
-
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simular delay de API
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    // Mock: aceitar qualquer email/senha válidos
-    if (email && password.length >= 6) {
-      const loggedUser = { ...mockUser, email }
-      setUser(loggedUser)
-      localStorage.setItem(AUTH_KEY, JSON.stringify(loggedUser))
-      return true
-    }
-    return false
-  }
-
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    // Simular delay de API
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    // Mock: aceitar qualquer registro válido
-    if (name && email && password.length >= 6) {
-      const newUser: User = {
-        id: Date.now().toString(),
-        email,
-        name,
-      }
-      setUser(newUser)
-      localStorage.setItem(AUTH_KEY, JSON.stringify(newUser))
-      return true
-    }
-    return false
-  }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem(AUTH_KEY)
-    router.push('/login')
+    authService.logout()
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, logout, refetchUser }}>
       {children}
     </AuthContext.Provider>
   )
