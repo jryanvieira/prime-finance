@@ -29,3 +29,11 @@ node_modules/
 .next/
 dist/
 build/
+
+# Claude Code (ferramentas de desenvolvimento, não artefatos do produto)
+.claude/
+backend/.claude/
+
+# Docs internos (pertencem ao Second Brain, não ao repo)
+backend/docs/adr/
+.github/pull_request_template.md

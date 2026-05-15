@@ -36,21 +36,21 @@ export function ExpenseChart({ data }: ExpenseChartProps) {
             >
               <defs>
                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="oklch(0.18 0 0)" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="oklch(0.18 0 0)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(var(--foreground))" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis
                 dataKey="month"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: 'oklch(0.45 0 0)', fontSize: 12 }}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                 dy={10}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: 'oklch(0.45 0 0)', fontSize: 12 }}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                 tickFormatter={(value) =>
                   new Intl.NumberFormat('pt-BR', {
                     notation: 'compact',
@@ -81,7 +81,7 @@ export function ExpenseChart({ data }: ExpenseChartProps) {
               <Area
                 type="monotone"
                 dataKey="total"
-                stroke="oklch(0.18 0 0)"
+                stroke="hsl(var(--foreground))"
                 strokeWidth={2}
                 fill="url(#colorTotal)"
               />
