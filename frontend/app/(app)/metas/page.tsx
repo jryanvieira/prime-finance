@@ -17,26 +17,7 @@ import {
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { goalsService, type Goal } from '@/lib/api'
 import { formatCurrency } from '@/lib/mock-data'
-
-function GoalProgressBar({ percentage }: { percentage: number }) {
-  const capped = Math.min(percentage, 100)
-  const color =
-    percentage >= 100 ? 'bg-emerald-500' : percentage >= 60 ? 'bg-blue-500' : 'bg-primary'
-
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${color}`}
-          style={{ width: `${capped}%` }}
-        />
-      </div>
-      <span className="text-xs tabular-nums w-10 text-right text-muted-foreground">
-        {percentage.toFixed(0)}%
-      </span>
-    </div>
-  )
-}
+import { ProgressBar } from '@/components/ui/progress-bar'
 
 const emptyGoalForm = { name: '', target: '', deadline: '' }
 
@@ -352,7 +333,7 @@ export default function MetasPage() {
                     </span>
                     <span className="font-medium">{formatCurrency(g.target_amount_cents)}</span>
                   </div>
-                  <GoalProgressBar percentage={g.percentage} />
+                  <ProgressBar value={g.percentage} />
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
