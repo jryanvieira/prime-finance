@@ -19,6 +19,7 @@ import (
 	categoryApp "dash-fin/internal/application/category"
 	expenseApp "dash-fin/internal/application/expense"
 	goalApp "dash-fin/internal/application/goal"
+	hsApp "dash-fin/internal/application/healthscore"
 	incomeApp "dash-fin/internal/application/income"
 	pmApp "dash-fin/internal/application/paymentmethod"
 	reApp "dash-fin/internal/application/recurringexpense"
@@ -125,6 +126,10 @@ func main() {
 	contributeGoalUC := goalApp.NewContributeGoalUseCase(goalRepo)
 	deleteGoalUC := goalApp.NewDeleteGoalUseCase(goalRepo)
 
+	calculateHealthScoreUC := hsApp.NewCalculateHealthScoreUseCase(
+		expenseRepo, incomeRepo, budgetRepo, reRepo, goalRepo, timeutil.RealClock{},
+	)
+
 	createIncomeUC := incomeApp.NewCreateIncomeUseCase(incomeRepo)
 	listIncomesUC := incomeApp.NewListIncomesUseCase(incomeRepo)
 	updateIncomeUC := incomeApp.NewUpdateIncomeUseCase(incomeRepo)
@@ -179,6 +184,8 @@ func main() {
 		UpdateGoalUC:     updateGoalUC,
 		ContributeGoalUC: contributeGoalUC,
 		DeleteGoalUC:     deleteGoalUC,
+
+		CalculateHealthScoreUC: calculateHealthScoreUC,
 
 		CreateIncomeUC: createIncomeUC,
 		ListIncomesUC:  listIncomesUC,
