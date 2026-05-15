@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CalendarClock, CreditCard, Receipt, TrendingDown, TrendingUp, Wallet, AlertTriangle, Target } from 'lucide-react'
 
-import { dashboardService, expensesService, paymentMethodsService, recurringExpensesService, incomesService, categoriesService, budgetsService, goalsService, usersService, type Expense, type Income, type CategorySummaryItem, type Category, type Budget, type Goal } from '@/lib/api'
+import { dashboardService, expensesService, paymentMethodsService, recurringExpensesService, incomesService, categoriesService, budgetsService, goalsService, usersService, type Expense, type Income, type CategorySummaryItem, type Category, type Budget, type Goal, type RecurringExpense } from '@/lib/api'
 import { toast } from 'sonner'
 import { OnboardingWizard } from '@/components/onboarding-wizard'
 import { formatCurrency } from '@/lib/mock-data'
@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState('')
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [recurringExpensesTotal, setRecurringExpensesTotal] = useState(0)
+  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([])
   const [paymentMethodsCount, setPaymentMethodsCount] = useState(0)
   const [monthIncomes, setMonthIncomes] = useState(0)
   const [chartData, setChartData] = useState<Array<{ month: string; total: number }>>([])
@@ -50,8 +51,9 @@ export default function DashboardPage() {
       const me = await usersService.getMe().catch(() => null)
       if (me && !me.onboarding_completed) setShowOnboarding(true)
 
-      const [monthExpenses, recurring, paymentMethods, evolution, incomes, catSummary, cats, budgetsData, goalsData] = await Promise.all([
+      const [monthExpenses, recurringList, recurring, paymentMethods, evolution, incomes, catSummary, cats, budgetsData, goalsData] = await Promise.all([
         expensesService.getByMonth(now.getFullYear(), now.getMonth() + 1),
+        recurringExpensesService.list(),
         recurringExpensesService.getMonthlyTotal(),
         paymentMethodsService.list(),
         dashboardService.getMonthlyEvolution(6),
@@ -62,6 +64,7 @@ export default function DashboardPage() {
         goalsService.list(),
       ])
       setExpenses(monthExpenses)
+      setRecurringExpenses(recurringList)
       setRecurringExpensesTotal(recurring)
       setPaymentMethodsCount(paymentMethods.length)
       setChartData(evolution)
@@ -73,6 +76,7 @@ export default function DashboardPage() {
     } catch {
       toast.error('Não foi possível carregar os dados do dashboard. Tente recarregar a página.')
       setExpenses([])
+      setRecurringExpenses([])
       setRecurringExpensesTotal(0)
       setPaymentMethodsCount(0)
       setChartData([])
@@ -142,8 +146,8 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Saldo"
-          value={formatCurrency(Math.abs(balance))}
-          description={balance >= 0 ? 'Positivo' : 'Negativo'}
+          value={formatCurrency(balance)}
+          description={balance >= 0 ? 'Positivo' : 'Em déficit'}
           icon={balance >= 0 ? TrendingUp : TrendingDown}
         />
         <StatsCard
