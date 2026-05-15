@@ -75,6 +75,9 @@ func (m *mockRecurringRepo) Update(ctx context.Context, re *domainRE.RecurringEx
 	return nil
 }
 func (m *mockRecurringRepo) Delete(ctx context.Context, userID, id string) error { return nil }
+func (m *mockRecurringRepo) ListAll(_ context.Context) ([]*domainRE.RecurringExpense, error) {
+	return nil, nil
+}
 
 type mockGoalRepo struct {
 	goals []*domainGoal.Goal

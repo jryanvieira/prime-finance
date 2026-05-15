@@ -29,6 +29,9 @@ func (r *mockRecurringRepo) Update(_ context.Context, _ *recurringexpense.Recurr
 	return nil
 }
 func (r *mockRecurringRepo) Delete(_ context.Context, _, _ string) error { return nil }
+func (r *mockRecurringRepo) ListAll(_ context.Context) ([]*recurringexpense.RecurringExpense, error) {
+	return nil, nil
+}
 
 type mockExpenseRepo struct {
 	items []*expense.Expense
