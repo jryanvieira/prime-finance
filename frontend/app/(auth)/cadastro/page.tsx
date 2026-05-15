@@ -52,7 +52,7 @@ export default function CadastroPage() {
         email: data.email,
         password: data.password,
       })
-      router.push('/dashboard')
+      router.push('/onboarding')
     } catch (err: any) {
       const code = err?.code || ''
       if (code === 'email_already_exists' || err?.status === 409) {
