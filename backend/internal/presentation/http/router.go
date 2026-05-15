@@ -11,6 +11,7 @@ import (
 	appCategory "dash-fin/internal/application/category"
 	appExpense "dash-fin/internal/application/expense"
 	appGoal "dash-fin/internal/application/goal"
+	appHS "dash-fin/internal/application/healthscore"
 	appIncome "dash-fin/internal/application/income"
 	appPM "dash-fin/internal/application/paymentmethod"
 	appRE "dash-fin/internal/application/recurringexpense"
@@ -93,6 +94,9 @@ type RouterDeps struct {
 	ContributeGoalUC  *appGoal.ContributeGoalUseCase
 	DeleteGoalUC      *appGoal.DeleteGoalUseCase
 
+	// HealthScore
+	CalculateHealthScoreUC *appHS.CalculateHealthScoreUseCase
+
 	// Config
 	AllowedOrigins []string
 	AccessTTL      time.Duration
@@ -139,6 +143,7 @@ func NewRouter(deps RouterDeps) *Router {
 	userHandler := newUserHandler(deps)
 	alertHandler := newAlertHandler(deps)
 	cashflowHandler := newCashflowHandler(deps)
+	healthScoreHandler := newHealthScoreHandler(deps)
 
 	r.Route("/v1", func(r chi.Router) {
 		// Auth routes (no auth required)
@@ -208,6 +213,7 @@ func NewRouter(deps RouterDeps) *Router {
 			r.Get("/months/{month}/summary", cashflowHandler.handleMonthlySummary)
 			r.Get("/categories/history", expenseHandler.handleCategoryHistory)
 			r.Get("/alerts", alertHandler.handleListAlerts)
+			r.Get("/health-score", healthScoreHandler.handleGet)
 			r.Post("/import/csv", importHandler.handleImportCSV)
 			r.Get("/export/csv", exportHandler.handleExportCSV)
 			r.Get("/months/{month}/expenses", monthHandler.handleMonthExpenses)
