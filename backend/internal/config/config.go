@@ -25,6 +25,9 @@ type Config struct {
 	AllowedOrigins []string
 
 	CookieSecure bool
+
+	ResendAPIKey string
+	MailFrom     string
 }
 
 func (c Config) HTTPAddr() string {
@@ -52,6 +55,9 @@ func FromEnv() (Config, error) {
 	}
 
 	cfg.CookieSecure = envBool("COOKIE_SECURE", false)
+
+	cfg.ResendAPIKey = envString("RESEND_API_KEY", "")
+	cfg.MailFrom = envString("MAIL_FROM", "")
 
 	if cfg.AccessTokenSecret == "" || cfg.RefreshTokenSecret == "" {
 		return Config{}, errors.New("ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET are required")
