@@ -30,6 +30,7 @@ import (
 	infraAuth "dash-fin/internal/infrastructure/auth"
 	"dash-fin/internal/infrastructure/crypto"
 	"dash-fin/internal/infrastructure/database"
+	infraPDF "dash-fin/internal/infrastructure/pdf"
 	sqliteRepo "dash-fin/internal/infrastructure/repositories/sqlite"
 
 	// Presentation layer
@@ -116,6 +117,7 @@ func main() {
 
 	cashflowUC := cashflowApp.NewCashflowUseCase(expenseRepo, incomeRepo, reRepo)
 	monthlySummaryUC := cashflowApp.NewMonthlySummaryUseCase(expenseRepo, incomeRepo, budgetRepo, reRepo)
+	exportPDFUC := cashflowApp.NewExportPDFUseCase(monthlySummaryUC, expenseRepo, infraPDF.NewPDFGenerator())
 	categoryHistoryUC := expenseApp.NewCategoryHistoryUseCase(expenseRepo)
 	listAlertsUC := alertApp.NewListAlertsUseCase(reRepo, expenseRepo, timeutil.RealClock{})
 
@@ -171,6 +173,7 @@ func main() {
 
 		CashflowUC:        cashflowUC,
 		MonthlySummaryUC:  monthlySummaryUC,
+		ExportPDFUC:       exportPDFUC,
 		CategoryHistoryUC: categoryHistoryUC,
 		ListAlertsUC:      listAlertsUC,
 

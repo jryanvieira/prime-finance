@@ -79,6 +79,7 @@ type RouterDeps struct {
 	// Cashflow
 	CashflowUC       *appCashflow.CashflowUseCase
 	MonthlySummaryUC *appCashflow.MonthlySummaryUseCase
+	ExportPDFUC      *appCashflow.ExportPDFUseCase
 
 	// CategoryHistory
 	CategoryHistoryUC *appExpense.CategoryHistoryUseCase
@@ -134,6 +135,7 @@ func NewRouter(deps RouterDeps) *Router {
 	importHandler := newImportHandler(deps)
 	monthHandler := newMonthHandler(deps)
 	exportHandler := newExportHandler(deps)
+	exportPDFHandler := newExportPDFHandler(deps)
 	budgetHandler := newBudgetHandler(deps)
 	goalHandler := newGoalHandler(deps)
 	userHandler := newUserHandler(deps)
@@ -212,6 +214,7 @@ func NewRouter(deps RouterDeps) *Router {
 			r.Get("/export/csv", exportHandler.handleExportCSV)
 			r.Get("/months/{month}/expenses", monthHandler.handleMonthExpenses)
 			r.Get("/months/{month}/category-summary", monthHandler.handleCategorySummary)
+			r.Get("/months/{month}/export/pdf", exportPDFHandler.handleExportPDF)
 			r.Delete("/installment-groups/{group_id}", expenseHandler.handleDeleteInstallmentGroup)
 		})
 	})
