@@ -24,10 +24,7 @@ type GoalResponse struct {
 }
 
 func toResponse(g *domainGoal.Goal) GoalResponse {
-	pct := 0.0
-	if g.TargetAmountCents > 0 {
-		pct = float64(g.CurrentAmountCents) / float64(g.TargetAmountCents) * 100
-	}
+	pct := g.ProgressPct()
 
 	remaining := g.TargetAmountCents - g.CurrentAmountCents
 	if remaining < 0 {
@@ -52,9 +49,12 @@ func toResponse(g *domainGoal.Goal) GoalResponse {
 			} else {
 				monthlyRequired = remaining
 			}
-			// on_track: se poupar o valor mensal necessário está dentro de um ritmo razoável
-			// considera on_track quando já atingiu ou quando monthly_required <= 20% do target/meses original
-			onTrack = remaining == 0 || (months > 0 && monthlyRequired > 0)
+			totalDuration := deadline.Sub(g.CreatedAt)
+			elapsed := now.Sub(g.CreatedAt)
+			if totalDuration > 0 && elapsed >= 0 {
+				expectedPct := float64(elapsed) / float64(totalDuration) * 100
+				onTrack = g.ProgressPct() >= expectedPct
+			}
 		}
 	}
 

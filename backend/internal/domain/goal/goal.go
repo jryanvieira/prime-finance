@@ -84,6 +84,17 @@ type Goal struct {
 	UpdatedAt          time.Time
 }
 
+func (g *Goal) ProgressPct() float64 {
+	if g.TargetAmountCents == 0 {
+		return 0
+	}
+	pct := float64(g.CurrentAmountCents) / float64(g.TargetAmountCents) * 100
+	if pct > 100 {
+		return 100
+	}
+	return pct
+}
+
 func NewGoal(userID, name string, targetAmountCents int64, deadline *string) (*Goal, error) {
 	if name == "" {
 		return nil, ErrEmptyName
