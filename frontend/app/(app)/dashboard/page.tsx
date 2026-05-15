@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarClock, CreditCard, Receipt, TrendingDown, TrendingUp, Wallet, AlertTriangle, Target } from 'lucide-react'
+import { ArrowRight, CalendarClock, Receipt, TrendingDown, TrendingUp, Wallet, AlertTriangle, Target } from 'lucide-react'
 
-import { dashboardService, expensesService, paymentMethodsService, recurringExpensesService, incomesService, categoriesService, budgetsService, goalsService, usersService, type Expense, type Income, type CategorySummaryItem, type Category, type Budget, type Goal, type RecurringExpense } from '@/lib/api'
+import { dashboardService, expensesService, paymentMethodsService, recurringExpensesService, incomesService, categoriesService, budgetsService, goalsService, usersService, type Expense, type Income, type CategorySummaryItem, type Category, type Budget, type Goal, type RecurringExpense, type PaymentMethod } from '@/lib/api'
 import { toast } from 'sonner'
 import { OnboardingWizard } from '@/components/onboarding-wizard'
 import { formatCurrency } from '@/lib/format'
@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [recurringExpensesTotal, setRecurringExpensesTotal] = useState(0)
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([])
-  const [paymentMethodsCount, setPaymentMethodsCount] = useState(0)
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [monthIncomes, setMonthIncomes] = useState(0)
   const [chartData, setChartData] = useState<Array<{ month: string; total: number }>>([])
   const [categorySummary, setCategorySummary] = useState<CategorySummaryItem[]>([])
@@ -51,7 +51,7 @@ export default function DashboardPage() {
       const me = await usersService.getMe().catch(() => null)
       if (me && !me.onboarding_completed) setShowOnboarding(true)
 
-      const [monthExpenses, recurringList, recurring, paymentMethods, evolution, incomes, catSummary, cats, budgetsData, goalsData] = await Promise.all([
+      const [monthExpenses, recurringList, recurring, pmList, evolution, incomes, catSummary, cats, budgetsData, goalsData] = await Promise.all([
         expensesService.getByMonth(now.getFullYear(), now.getMonth() + 1),
         recurringExpensesService.list(),
         recurringExpensesService.getMonthlyTotal(),
@@ -66,7 +66,7 @@ export default function DashboardPage() {
       setExpenses(monthExpenses)
       setRecurringExpenses(recurringList)
       setRecurringExpensesTotal(recurring)
-      setPaymentMethodsCount(paymentMethods.length)
+      setPaymentMethods(pmList)
       setChartData(evolution)
       setMonthIncomes(incomes.reduce((sum, inc) => sum + inc.amount_cents, 0))
       setCategorySummary(catSummary)
@@ -78,7 +78,6 @@ export default function DashboardPage() {
       setExpenses([])
       setRecurringExpenses([])
       setRecurringExpensesTotal(0)
-      setPaymentMethodsCount(0)
       setChartData([])
       setMonthIncomes(0)
       setCategorySummary([])
@@ -99,16 +98,15 @@ export default function DashboardPage() {
     : 0
   const balance = monthIncomes - totalMonth
 
-  // Próximos gastos fixos (próximos 7 dias)
+  // Próximos gastos fixos (próximos 7 dias pelo day_of_month)
   const today = new Date()
   const currentDay = today.getDate()
-  const upcomingRecurring = expenses
-    .filter((exp) => exp.installment_index === undefined)
+  const upcomingRecurring = recurringExpenses
     .filter((exp) => {
-      const date = new Date(exp.date + 'T00:00:00')
-      const diff = date.getDate() - currentDay
+      const diff = exp.day_of_month - currentDay
       return diff > 0 && diff <= 7
     })
+    .sort((a, b) => a.day_of_month - b.day_of_month)
     .slice(0, 3)
 
   return (
@@ -128,7 +126,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total do mês"
           value={formatCurrency(totalMonth)}
@@ -146,21 +144,16 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Saldo"
-          value={formatCurrency(balance)}
+          value={(balance >= 0 ? '+' : '') + formatCurrency(balance)}
           description={balance >= 0 ? 'Positivo' : 'Em déficit'}
           icon={balance >= 0 ? TrendingUp : TrendingDown}
+          className={balance >= 0 ? 'border-emerald-500/30' : 'border-red-500/30'}
         />
         <StatsCard
           title="Gastos fixos"
           value={formatCurrency(totalRecurring)}
           description="Despesas recorrentes"
           icon={CalendarClock}
-        />
-        <StatsCard
-          title="Meios de pagamento"
-          value={String(paymentMethodsCount)}
-          description="Cadastrados"
-          icon={CreditCard}
         />
       </div>
 
@@ -276,7 +269,7 @@ export default function DashboardPage() {
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium">{expense.description}</span>
                     <span className="text-xs text-muted-foreground">
-                      {expense.date}
+                      Dia {expense.day_of_month}
                     </span>
                   </div>
                   <span className="font-semibold tabular-nums">
@@ -316,7 +309,7 @@ export default function DashboardPage() {
               description={expense.description}
               amount_cents={expense.amount_cents}
               category={expense.category || 'Sem categoria'}
-              payment_method_id={expense.payment_method_id || ''}
+              payment_method_name={paymentMethods.find((pm) => pm.id === expense.payment_method_id)?.label}
               installments={expense.installments_count}
               current_installment={expense.installment_index}
             />
