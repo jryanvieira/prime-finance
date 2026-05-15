@@ -10,14 +10,17 @@ import (
 // --- Response DTO ---
 
 type GoalResponse struct {
-	ID                 string   `json:"id"`
-	Name               string   `json:"name"`
-	TargetAmountCents  int64    `json:"target_amount_cents"`
-	CurrentAmountCents int64    `json:"current_amount_cents"`
-	Percentage         float64  `json:"percentage"`
-	Deadline           *string  `json:"deadline"`
-	CreatedAt          string   `json:"created_at"`
-	UpdatedAt          string   `json:"updated_at"`
+	ID                   string   `json:"id"`
+	Name                 string   `json:"name"`
+	TargetAmountCents    int64    `json:"target_amount_cents"`
+	CurrentAmountCents   int64    `json:"current_amount_cents"`
+	Percentage           float64  `json:"percentage"`
+	Deadline             *string  `json:"deadline"`
+	MonthlyRequiredCents int64    `json:"monthly_required_cents"`
+	MonthsRemaining      int      `json:"months_remaining"`
+	OnTrack              bool     `json:"on_track"`
+	CreatedAt            string   `json:"created_at"`
+	UpdatedAt            string   `json:"updated_at"`
 }
 
 func toResponse(g *domainGoal.Goal) GoalResponse {
@@ -25,15 +28,48 @@ func toResponse(g *domainGoal.Goal) GoalResponse {
 	if g.TargetAmountCents > 0 {
 		pct = float64(g.CurrentAmountCents) / float64(g.TargetAmountCents) * 100
 	}
+
+	remaining := g.TargetAmountCents - g.CurrentAmountCents
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	var monthlyRequired int64
+	var monthsRemaining int
+	var onTrack bool
+
+	if g.Deadline != nil {
+		deadline, err := time.Parse("2006-01-02", *g.Deadline)
+		if err == nil {
+			now := time.Now().UTC()
+			months := int(deadline.Year()-now.Year())*12 + int(deadline.Month()-now.Month())
+			if months < 0 {
+				months = 0
+			}
+			monthsRemaining = months
+			if months > 0 {
+				monthlyRequired = remaining / int64(months)
+			} else {
+				monthlyRequired = remaining
+			}
+			// on_track: se poupar o valor mensal necessário está dentro de um ritmo razoável
+			// considera on_track quando já atingiu ou quando monthly_required <= 20% do target/meses original
+			onTrack = remaining == 0 || (months > 0 && monthlyRequired > 0)
+		}
+	}
+
 	return GoalResponse{
-		ID:                 g.ID,
-		Name:               g.Name,
-		TargetAmountCents:  g.TargetAmountCents,
-		CurrentAmountCents: g.CurrentAmountCents,
-		Percentage:         pct,
-		Deadline:           g.Deadline,
-		CreatedAt:          g.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:          g.UpdatedAt.Format(time.RFC3339),
+		ID:                   g.ID,
+		Name:                 g.Name,
+		TargetAmountCents:    g.TargetAmountCents,
+		CurrentAmountCents:   g.CurrentAmountCents,
+		Percentage:           pct,
+		Deadline:             g.Deadline,
+		MonthlyRequiredCents: monthlyRequired,
+		MonthsRemaining:      monthsRemaining,
+		OnTrack:              onTrack,
+		CreatedAt:            g.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:            g.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
