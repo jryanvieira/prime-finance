@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo, useCallback, type ReactNode } from 'react'
 import { authService, usersService } from '@/lib/api'
 import type { User } from '@/lib/api'
 
@@ -14,22 +14,32 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const AUTH_KEY = 'prime-finance-auth'
+const TOKEN_KEY = 'prime-finance-token'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const refetchUser = async () => {
+  const refetchUser = useCallback(async () => {
     try {
       const me = await usersService.getMe()
       setUser(me)
       localStorage.setItem(AUTH_KEY, JSON.stringify(me))
     } catch {
-      // unauthenticated — keep whatever is in state
+      // token expirado — limpar estado
+      setUser(null)
+      localStorage.removeItem(AUTH_KEY)
+      localStorage.removeItem(TOKEN_KEY)
     }
-  }
+  }, [])
 
   useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) {
+      setIsLoading(false)
+      return
+    }
+
     const savedAuth = localStorage.getItem(AUTH_KEY)
     if (savedAuth) {
       try {
@@ -45,13 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }).catch(() => {}).finally(() => setIsLoading(false))
   }, [])
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null)
     authService.logout()
-  }
+  }, [])
+
+  const contextValue = useMemo(
+    () => ({ user, isLoading, logout, refetchUser }),
+    [user, isLoading, logout, refetchUser]
+  )
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout, refetchUser }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )
