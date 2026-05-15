@@ -11,7 +11,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel, FieldError, FieldGroup } from '@/components/ui/field'
-import { authService } from '@/lib/api'
+import { authService, usersService } from '@/lib/api'
 
 const loginSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -40,6 +40,15 @@ export default function LoginPage() {
 
     try {
       await authService.login(data)
+      try {
+        const user = await usersService.getMe()
+        if (!user.onboarding_completed) {
+          router.push('/onboarding')
+          return
+        }
+      } catch {
+        // se falhar, vai pro dashboard mesmo assim
+      }
       router.push('/dashboard')
     } catch (err: any) {
       const code = err?.code || ''
