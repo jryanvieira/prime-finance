@@ -97,7 +97,7 @@ func main() {
 	refreshUC := authApp.NewRefreshUseCase(tokenService, refreshTokenRepo)
 	logoutUC := authApp.NewLogoutUseCase(tokenService, refreshTokenRepo)
 
-	createExpenseUC := expenseApp.NewCreateExpenseUseCase(expenseRepo)
+	createExpenseUC := expenseApp.NewCreateExpenseUseCase(expenseRepo, budgetRepo, userRepo, nil)
 	listExpensesUC := expenseApp.NewListExpensesUseCase(expenseRepo)
 	updateExpenseUC := expenseApp.NewUpdateExpenseUseCase(expenseRepo)
 	deleteExpenseUC := expenseApp.NewDeleteExpenseUseCase(expenseRepo)

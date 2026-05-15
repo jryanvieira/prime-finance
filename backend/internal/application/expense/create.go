@@ -2,9 +2,14 @@ package expense
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 
+	domainBudget "dash-fin/internal/domain/budget"
 	domainExpense "dash-fin/internal/domain/expense"
 	"dash-fin/internal/domain/shared"
+	domainUser "dash-fin/internal/domain/user"
+	pkgmailer "dash-fin/pkg/mailer"
 
 	"github.com/google/uuid"
 )
@@ -39,11 +44,24 @@ type ExpenseResponse struct {
 }
 
 type CreateExpenseUseCase struct {
-	repo domainExpense.Repository
+	repo       domainExpense.Repository
+	budgetRepo domainBudget.Repository
+	userRepo   domainUser.Repository
+	mailer     pkgmailer.Mailer // nil = alertas desabilitados
 }
 
-func NewCreateExpenseUseCase(repo domainExpense.Repository) *CreateExpenseUseCase {
-	return &CreateExpenseUseCase{repo: repo}
+func NewCreateExpenseUseCase(
+	repo domainExpense.Repository,
+	budgetRepo domainBudget.Repository,
+	userRepo domainUser.Repository,
+	mailer pkgmailer.Mailer,
+) *CreateExpenseUseCase {
+	return &CreateExpenseUseCase{
+		repo:       repo,
+		budgetRepo: budgetRepo,
+		userRepo:   userRepo,
+		mailer:     mailer,
+	}
 }
 
 func (uc *CreateExpenseUseCase) Execute(ctx context.Context, req CreateExpenseRequest) (interface{}, error) {
@@ -132,7 +150,51 @@ func (uc *CreateExpenseUseCase) Execute(ctx context.Context, req CreateExpenseRe
 		return nil, err
 	}
 
+	uc.checkBudgetAlert(ctx, exp)
+
 	return toExpenseResponse(exp), nil
+}
+
+func (uc *CreateExpenseUseCase) checkBudgetAlert(ctx context.Context, exp *domainExpense.Expense) {
+	if uc.mailer == nil || exp.Category == nil {
+		return
+	}
+
+	month := exp.Date[:7] // "YYYY-MM"
+	budgets, err := uc.budgetRepo.ListWithSpent(ctx, exp.UserID, month)
+	if err != nil {
+		return
+	}
+
+	for _, b := range budgets {
+		if b.Budget.CategoryID != *exp.Category {
+			continue
+		}
+		if b.Budget.AmountCents == 0 {
+			return
+		}
+		pct := float64(b.SpentCents) / float64(b.Budget.AmountCents)
+		if pct < 0.8 {
+			return
+		}
+
+		u, err := uc.userRepo.GetByID(ctx, exp.UserID)
+		if err != nil {
+			return
+		}
+
+		subject := fmt.Sprintf("Alerta: orçamento de %s atingiu %.0f%%", *exp.Category, pct*100)
+		html := fmt.Sprintf(
+			"<p>Olá, %s!</p><p>O orçamento da categoria <strong>%s</strong> atingiu <strong>%.0f%%</strong> (R$ %.2f de R$ %.2f).</p>",
+			u.Name, *exp.Category, pct*100,
+			float64(b.SpentCents)/100, float64(b.Budget.AmountCents)/100,
+		)
+
+		if err := uc.mailer.Send(ctx, u.Email.String(), subject, html); err != nil {
+			slog.Warn("budget alert send failed", "error", err, "user_id", exp.UserID)
+		}
+		return
+	}
 }
 
 func toExpenseResponse(e *domainExpense.Expense) ExpenseResponse {
