@@ -3,6 +3,7 @@ package alert
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -73,7 +74,9 @@ func (uc *SendWeeklySummaryUseCase) Execute(ctx context.Context) error {
 		subject := fmt.Sprintf("Resumo semanal: %s a %s", from, to)
 		html := buildWeeklySummaryHTML(u.Name, from, to, total, top3)
 
-		_ = uc.mailer.Send(ctx, u.Email.String(), subject, html)
+		if err := uc.mailer.Send(ctx, u.Email.String(), subject, html); err != nil {
+			slog.Warn("send weekly summary: mailer failed", "user_id", u.ID, "error", err)
+		}
 	}
 	return nil
 }
@@ -99,11 +102,11 @@ func buildWeeklySummaryHTML(name, from, to string, total int64, top []catTotal) 
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "<p>Olá, %s!</p>", name)
 	fmt.Fprintf(&sb, "<p>Resumo da semana de <strong>%s</strong> a <strong>%s</strong>:</p>", from, to)
-	fmt.Fprintf(&sb, "<p>Total gasto: <strong>R$ %.2f</strong></p>", float64(total)/100)
+	fmt.Fprintf(&sb, "<p>Total gasto: <strong>R$ %d,%02d</strong></p>", total/100, total%100)
 	if len(top) > 0 {
 		sb.WriteString("<p>Top categorias:</p><ul>")
 		for _, c := range top {
-			fmt.Fprintf(&sb, "<li>%s: R$ %.2f</li>", c.Name, float64(c.Total)/100)
+			fmt.Fprintf(&sb, "<li>%s: R$ %d,%02d</li>", c.Name, c.Total/100, c.Total%100)
 		}
 		sb.WriteString("</ul>")
 	}
