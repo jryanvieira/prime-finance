@@ -238,6 +238,9 @@ export interface Goal {
   current_amount_cents: number
   percentage: number
   deadline?: string | null
+  monthly_required_cents: number
+  months_remaining: number
+  on_track: boolean
   created_at: string
   updated_at: string
 }
