@@ -7,7 +7,7 @@ import { ArrowRight, CalendarClock, CreditCard, Receipt, TrendingDown, TrendingU
 import { dashboardService, expensesService, paymentMethodsService, recurringExpensesService, incomesService, categoriesService, budgetsService, goalsService, usersService, type Expense, type Income, type CategorySummaryItem, type Category, type Budget, type Goal, type RecurringExpense } from '@/lib/api'
 import { toast } from 'sonner'
 import { OnboardingWizard } from '@/components/onboarding-wizard'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatsCard } from '@/components/stats-card'
