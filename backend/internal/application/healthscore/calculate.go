@@ -111,7 +111,7 @@ func (uc *CalculateHealthScoreUseCase) Execute(
 	if totalIncomeCents == 0 {
 		commitmentRate = 1.0
 	} else {
-		commitmentRate = 1.0 - float64(totalRecurringCents)/float64(totalIncomeCents)
+		commitmentRate = float64(totalRecurringCents) / float64(totalIncomeCents)
 	}
 
 	// Dimension 2: budget adherence
@@ -155,7 +155,7 @@ func (uc *CalculateHealthScoreUseCase) Execute(
 	}
 
 	// Score final
-	score := int(clamp(commitmentRate)*0.4*100 +
+	score := int((1.0-clamp(commitmentRate))*0.4*100 +
 		clamp(budgetAdherence)*0.3*100 +
 		clamp(savingsRate)*0.2*100 +
 		clamp(goalProgress)*0.1*100)
@@ -204,7 +204,7 @@ func scoreLevel(score int) string {
 func generateInsights(commitmentRate, savingsRate, budgetAdherence, goalProgress float64, score int) []string {
 	var insights []string
 
-	if commitmentRate < 0 || (1-commitmentRate) > 0.7 {
+	if commitmentRate > 0.7 {
 		insights = append(insights, "Mais de 70% da sua renda está comprometida com despesas fixas.")
 	}
 
