@@ -8,4 +8,5 @@ type Repository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
 	CompleteOnboarding(ctx context.Context, userID string) error
+	ListAll(ctx context.Context) ([]*User, error)
 }
