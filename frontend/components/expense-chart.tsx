@@ -9,7 +9,7 @@ import {
   YAxis,
 } from 'recharts'
 
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface ExpenseChartProps {

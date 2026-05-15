@@ -16,7 +16,7 @@ import { AlertCircle, ArrowRight, CheckCircle2, TrendingUp, Wallet, CheckSquare 
 import { projectionsService } from '@/lib/api'
 import { toast } from 'sonner'
 import type { ProjectionsSummary, FutureMonthProjection } from '@/lib/api/types'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { StatsCard } from '@/components/stats-card'

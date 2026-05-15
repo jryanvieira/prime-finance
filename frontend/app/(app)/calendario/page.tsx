@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { calendarService, paymentMethodsService, type MonthExpenseItem, type PaymentMethod, type MonthExpensesResponse } from '@/lib/api'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/format'
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
 const WEEKDAYS_SHORT = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']

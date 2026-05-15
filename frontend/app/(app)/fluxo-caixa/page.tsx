@@ -16,7 +16,7 @@ import {
 } from 'recharts'
 
 import { cashflowService, type CashflowDay, type CashflowResponse } from '@/lib/api'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatsCard } from '@/components/stats-card'
