@@ -170,11 +170,7 @@ func (uc *CreateExpenseUseCase) checkBudgetAlert(ctx context.Context, exp *domai
 		if b.Budget.CategoryID != *exp.Category {
 			continue
 		}
-		if b.Budget.AmountCents == 0 {
-			return
-		}
-		pct := float64(b.SpentCents) / float64(b.Budget.AmountCents)
-		if pct < 0.8 {
+		if !b.IsNearLimit() {
 			return
 		}
 
@@ -183,11 +179,13 @@ func (uc *CreateExpenseUseCase) checkBudgetAlert(ctx context.Context, exp *domai
 			return
 		}
 
-		subject := fmt.Sprintf("Alerta: orçamento de %s atingiu %.0f%%", *exp.Category, pct*100)
+		pctInt := b.SpentCents * 100 / b.Budget.AmountCents
+		subject := fmt.Sprintf("Alerta: orçamento de %s atingiu %d%%", *exp.Category, pctInt)
 		html := fmt.Sprintf(
-			"<p>Olá, %s!</p><p>O orçamento da categoria <strong>%s</strong> atingiu <strong>%.0f%%</strong> (R$ %.2f de R$ %.2f).</p>",
-			u.Name, *exp.Category, pct*100,
-			float64(b.SpentCents)/100, float64(b.Budget.AmountCents)/100,
+			"<p>Olá, %s!</p><p>O orçamento da categoria <strong>%s</strong> atingiu <strong>%d%%</strong> (R$ %d,%02d de R$ %d,%02d).</p>",
+			u.Name, *exp.Category, pctInt,
+			b.SpentCents/100, b.SpentCents%100,
+			b.Budget.AmountCents/100, b.Budget.AmountCents%100,
 		)
 
 		if err := uc.mailer.Send(ctx, u.Email.String(), subject, html); err != nil {
