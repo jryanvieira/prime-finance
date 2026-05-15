@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	pkgmailer "dash-fin/pkg/mailer"
 )
@@ -22,7 +23,7 @@ func NewResendMailer(apiKey, from string) *ResendMailer {
 	return &ResendMailer{
 		apiKey: apiKey,
 		from:   from,
-		client: &http.Client{},
+		client: &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
