@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"dash-fin/internal/domain/user"
 )
@@ -97,7 +98,7 @@ WHERE id = ?;
 
 func (r *UserRepository) ListAll(ctx context.Context) ([]*user.User, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT id, name, email, password_hash, COALESCE(onboarding_completed, 0)
+SELECT id, name, email, created_at, updated_at
 FROM users ORDER BY created_at;`)
 	if err != nil {
 		return nil, err
@@ -106,22 +107,17 @@ FROM users ORDER BY created_at;`)
 
 	var users []*user.User
 	for rows.Next() {
-		var uid, name, emailStr, passwordHash string
-		var onboarding int
-		if err := rows.Scan(&uid, &name, &emailStr, &passwordHash, &onboarding); err != nil {
+		var uid, name, emailStr, createdAtStr, updatedAtStr string
+		if err := rows.Scan(&uid, &name, &emailStr, &createdAtStr, &updatedAtStr); err != nil {
 			return nil, err
 		}
-		emailVO, err := user.NewEmail(emailStr)
+		createdAt, _ := time.Parse(time.RFC3339, createdAtStr)
+		updatedAt, _ := time.Parse(time.RFC3339, updatedAtStr)
+		u, err := user.ReconstructUser(uid, name, emailStr, "", createdAt, updatedAt)
 		if err != nil {
 			return nil, err
 		}
-		users = append(users, &user.User{
-			ID:                  uid,
-			Name:                name,
-			Email:               emailVO,
-			PasswordHash:        passwordHash,
-			OnboardingCompleted: onboarding == 1,
-		})
+		users = append(users, u)
 	}
 	return users, rows.Err()
 }

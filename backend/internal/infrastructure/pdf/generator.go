@@ -4,34 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
+	pkgpdf "dash-fin/pkg/pdf"
+
 	"github.com/jung-kurt/gofpdf"
 )
-
-type ExpenseRow struct {
-	Date        string
-	Description string
-	Category    string
-	AmountCents int64
-}
-
-type CategorySummaryItem struct {
-	Category         string
-	TotalCents       int64
-	TransactionCount int
-}
-
-type SummaryData struct {
-	Month               string
-	TotalExpensesCents  int64
-	TotalIncomeCents    int64
-	TotalRecurringCents int64
-	BalanceCents        int64
-	CategorySummary     []CategorySummaryItem
-}
-
-type Generator interface {
-	Generate(data *SummaryData, expenses []ExpenseRow) ([]byte, error)
-}
 
 type PDFGenerator struct{}
 
@@ -56,7 +32,7 @@ func truncate(s string, n int) string {
 	return string(runes[:n])
 }
 
-func (g *PDFGenerator) Generate(data *SummaryData, expenses []ExpenseRow) ([]byte, error) {
+func (g *PDFGenerator) Generate(data *pkgpdf.SummaryData, expenses []pkgpdf.ExpenseRow) ([]byte, error) {
 	p := gofpdf.New("P", "mm", "A4", "")
 	p.SetMargins(15, 15, 15)
 	p.AddPage()
