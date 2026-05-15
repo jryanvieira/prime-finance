@@ -13,3 +13,10 @@ type RealClock struct{}
 func (c RealClock) Now() time.Time {
 	return time.Now().UTC()
 }
+
+// fixedClock returns a fixed time — useful in tests.
+type fixedClock struct{ t time.Time }
+
+func (c fixedClock) Now() time.Time { return c.t }
+
+func FixedClock(t time.Time) Clock { return fixedClock{t} }
