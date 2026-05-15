@@ -6,7 +6,7 @@ interface ExpenseCardProps {
   description: string
   amount_cents: number
   category: string
-  payment_method_id: string
+  payment_method_name?: string
   installments?: number
   current_installment?: number
 }
@@ -16,7 +16,7 @@ export function ExpenseCard({
   description,
   amount_cents,
   category,
-  payment_method_id,
+  payment_method_name,
   installments,
   current_installment,
 }: ExpenseCardProps) {
@@ -30,11 +30,11 @@ export function ExpenseCard({
           <span className="font-medium text-foreground">{description}</span>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{category}</span>
-            {payment_method_id && (
+            {payment_method_name && (
               <>
                 <span className="text-xs text-muted-foreground">•</span>
                 <span className="text-xs text-muted-foreground">
-                  {payment_method_id}
+                  {payment_method_name}
                 </span>
               </>
             )}
