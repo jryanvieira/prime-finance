@@ -272,61 +272,57 @@ func main() {
 }
 
 func runDailyAt(ctx context.Context, logger *slog.Logger, hour, minute int, fn func()) {
+	now := time.Now().UTC()
+	next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, time.UTC)
+	if !next.After(now) {
+		next = next.Add(24 * time.Hour)
+	}
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(time.Until(next)):
+	}
+	logger.Info("running daily job")
+	fn()
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
 	for {
-		now := time.Now()
-		next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
-		if !next.After(now) {
-			next = next.Add(24 * time.Hour)
-		}
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(time.Until(next)):
-		}
-		logger.Info("running daily job")
-		fn()
-		ticker := time.NewTicker(24 * time.Hour)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				logger.Info("running daily job")
-				fn()
-			}
+		case <-ticker.C:
+			logger.Info("running daily job")
+			fn()
 		}
 	}
 }
 
 func runWeeklyOnMondayAt(ctx context.Context, logger *slog.Logger, hour, minute int, fn func()) {
-	for {
-		now := time.Now()
-		daysUntilMonday := (int(time.Monday) - int(now.Weekday()) + 7) % 7
-		if daysUntilMonday == 0 {
-			next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
-			if !next.After(now) {
-				daysUntilMonday = 7
-			}
+	now := time.Now().UTC()
+	daysUntilMonday := (int(time.Monday) - int(now.Weekday()) + 7) % 7
+	if daysUntilMonday == 0 {
+		next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, time.UTC)
+		if !next.After(now) {
+			daysUntilMonday = 7
 		}
-		next := time.Date(now.Year(), now.Month(), now.Day()+daysUntilMonday, hour, minute, 0, 0, now.Location())
+	}
+	next := time.Date(now.Year(), now.Month(), now.Day()+daysUntilMonday, hour, minute, 0, 0, time.UTC)
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(time.Until(next)):
+	}
+	logger.Info("running weekly job")
+	fn()
+	ticker := time.NewTicker(7 * 24 * time.Hour)
+	defer ticker.Stop()
+	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(time.Until(next)):
-		}
-		logger.Info("running weekly job")
-		fn()
-		ticker := time.NewTicker(7 * 24 * time.Hour)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				logger.Info("running weekly job")
-				fn()
-			}
+		case <-ticker.C:
+			logger.Info("running weekly job")
+			fn()
 		}
 	}
 }

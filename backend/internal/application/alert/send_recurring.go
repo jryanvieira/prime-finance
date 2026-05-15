@@ -57,7 +57,7 @@ func (uc *SendRecurringAlertsUseCase) Execute(ctx context.Context) error {
 			continue
 		}
 
-		amount := fmt.Sprintf("R$ %.2f", float64(re.AmountCents)/100)
+		amount := fmt.Sprintf("R$ %d,%02d", re.AmountCents/100, re.AmountCents%100)
 		subject := fmt.Sprintf("Lembrete: %s vence em 3 dias", re.Description)
 		html := fmt.Sprintf(
 			"<p>Olá, %s!</p><p>A despesa <strong>%s</strong> (%s) vence no dia <strong>%d</strong>.</p>",
