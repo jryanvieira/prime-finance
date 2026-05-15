@@ -205,6 +205,9 @@ func main() {
 		IncomeListUC:    listIncomesUC,
 
 		AllowedOrigins: cfg.AllowedOrigins,
+		AccessTTL:      cfg.AccessTokenTTL,
+		RefreshTTL:     cfg.RefreshTokenTTL,
+		CookieSecure:   cfg.CookieSecure,
 	})
 
 	// ── HTTP Server ─────────────────────────────────────────────────
