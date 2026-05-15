@@ -13,20 +13,12 @@ import { formatCurrency } from '@/lib/format'
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
 const WEEKDAYS_SHORT = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
-const MONTHS = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-]
+
+function getMonthName(monthIndex: number, year: number): string {
+  return new Date(year, monthIndex, 1)
+    .toLocaleDateString('pt-BR', { month: 'long' })
+    .replace(/^\w/, c => c.toUpperCase())
+}
 
 interface DayData {
   date: Date
@@ -311,7 +303,7 @@ export default function CalendarioPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-base font-medium sm:text-lg">
-              {MONTHS[month]} {year}
+              {getMonthName(month, year)} {year}
             </CardTitle>
             <div className="flex items-center gap-1 sm:gap-2">
               <Button variant="ghost" size="sm" onClick={goToToday} className="hidden text-xs sm:inline-flex">
@@ -395,7 +387,7 @@ export default function CalendarioPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between text-base font-medium">
               <span>
-                {selectedDay ? `${selectedDay.date.getDate()} de ${MONTHS[selectedDay.date.getMonth()]}` : 'Selecione um dia'}
+                {selectedDay ? `${selectedDay.date.getDate()} de ${getMonthName(selectedDay.date.getMonth(), selectedDay.date.getFullYear())}` : 'Selecione um dia'}
               </span>
               {selectedDay?.isToday && <Badge variant="secondary" className="text-[10px]">Hoje</Badge>}
             </CardTitle>
