@@ -23,6 +23,8 @@ type Config struct {
 	RefreshTokenTTL time.Duration
 
 	AllowedOrigins []string
+
+	CookieSecure bool
 }
 
 func (c Config) HTTPAddr() string {
@@ -48,6 +50,8 @@ func FromEnv() (Config, error) {
 	for i := range cfg.AllowedOrigins {
 		cfg.AllowedOrigins[i] = strings.TrimSpace(cfg.AllowedOrigins[i])
 	}
+
+	cfg.CookieSecure = envBool("COOKIE_SECURE", false)
 
 	if cfg.AccessTokenSecret == "" || cfg.RefreshTokenSecret == "" {
 		return Config{}, errors.New("ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET are required")
@@ -76,6 +80,18 @@ func envInt(key string, def int) int {
 		return def
 	}
 	return n
+}
+
+func envBool(key string, def bool) bool {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return def
+	}
+	return b
 }
 
 func envDuration(key string, def time.Duration) time.Duration {
