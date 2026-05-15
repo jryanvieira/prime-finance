@@ -69,7 +69,10 @@ func (m *mockRERepo) List(_ context.Context, _ string) ([]*domainRE.RecurringExp
 	return m.list, nil
 }
 func (m *mockRERepo) Update(_ context.Context, _ *domainRE.RecurringExpense) error { return nil }
-func (m *mockRERepo) Delete(_ context.Context, _, _ string) error                  { return nil }
+func (m *mockRERepo) Delete(_ context.Context, _, _ string) error { return nil }
+func (m *mockRERepo) ListAll(_ context.Context) ([]*domainRE.RecurringExpense, error) {
+	return nil, nil
+}
 
 // --- helpers ---
 
