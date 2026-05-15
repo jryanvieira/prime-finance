@@ -30,14 +30,13 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
-import { recurringExpensesService, paymentMethodsService, type RecurringExpense, type PaymentMethod } from '@/lib/api'
+import { recurringExpensesService, paymentMethodsService, categoriesService, type RecurringExpense, type PaymentMethod, type Category } from '@/lib/api'
 import { formatCurrency } from '@/lib/mock-data'
-
-const categories = ['Alimentacao', 'Transporte', 'Moradia', 'Lazer', 'Saude', 'Educacao', 'Outros']
 
 export default function GastosFixosPage() {
   const [expenses, setExpenses] = useState<RecurringExpense[]>([])
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<RecurringExpense | null>(null)
@@ -57,9 +56,10 @@ export default function GastosFixosPage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [recData, pmData] = await Promise.all([recurringExpensesService.list(), paymentMethodsService.list()])
+      const [recData, pmData, catData] = await Promise.all([recurringExpensesService.list(), paymentMethodsService.list(), categoriesService.list('expense')])
       setExpenses(recData)
       setPaymentMethods(pmData)
+      setCategories(catData)
     } finally {
       setLoading(false)
     }
@@ -230,8 +230,8 @@ export default function GastosFixosPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {cat.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
