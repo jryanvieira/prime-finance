@@ -1,4 +1,4 @@
-import { formatCurrency, formatDate } from '@/lib/mock-data'
+import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 interface ExpenseCardProps {

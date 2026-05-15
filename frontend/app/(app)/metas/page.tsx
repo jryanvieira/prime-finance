@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { goalsService, type Goal } from '@/lib/api'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/format'
 
 function GoalProgressBar({ percentage }: { percentage: number }) {
   const capped = Math.min(percentage, 100)

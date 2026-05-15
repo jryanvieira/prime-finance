@@ -31,7 +31,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { recurringExpensesService, paymentMethodsService, type RecurringExpense, type PaymentMethod } from '@/lib/api'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/format'
 
 const categories = ['Alimentacao', 'Transporte', 'Moradia', 'Lazer', 'Saude', 'Educacao', 'Outros']
 

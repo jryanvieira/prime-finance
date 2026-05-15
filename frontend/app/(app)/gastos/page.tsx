@@ -63,7 +63,7 @@ import {
   type Category,
   type ImportResult,
 } from '@/lib/api'
-import { formatCurrency, formatDate } from '@/lib/mock-data'
+import { formatCurrency, formatDate } from '@/lib/format'
 import { StatsCard } from '@/components/stats-card'
 import { toast } from 'sonner'
 

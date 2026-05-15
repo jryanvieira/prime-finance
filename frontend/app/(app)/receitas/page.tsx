@@ -38,7 +38,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { incomesService, categoriesService, type Income, type Category } from '@/lib/api'
-import { formatCurrency, formatDate } from '@/lib/mock-data'
+import { formatCurrency, formatDate } from '@/lib/format'
 
 export default function ReceitasPage() {
   const [incomes, setIncomes] = useState<Income[]>([])
