@@ -13,6 +13,8 @@ import (
 
 	// Application layer
 	alertApp "dash-fin/internal/application/alert"
+	infraMailer "dash-fin/internal/infrastructure/mailer"
+	pkgmailer "dash-fin/pkg/mailer"
 	authApp "dash-fin/internal/application/auth"
 	budgetApp "dash-fin/internal/application/budget"
 	cashflowApp "dash-fin/internal/application/cashflow"
@@ -90,6 +92,14 @@ func main() {
 		RefreshTTL:    cfg.RefreshTokenTTL,
 	})
 
+	// ── Email ───────────────────────────────────────────────────────
+
+	var emailMailer pkgmailer.Mailer
+	if cfg.ResendAPIKey != "" {
+		emailMailer = infraMailer.NewResendMailer(cfg.ResendAPIKey, cfg.MailFrom)
+		logger.Info("email alerts enabled", "from", cfg.MailFrom)
+	}
+
 	// ── Application (Use Cases) ─────────────────────────────────────
 
 	signupUC := authApp.NewSignupUseCase(userRepo, hasher, tokenService, refreshTokenRepo)
@@ -97,7 +107,7 @@ func main() {
 	refreshUC := authApp.NewRefreshUseCase(tokenService, refreshTokenRepo)
 	logoutUC := authApp.NewLogoutUseCase(tokenService, refreshTokenRepo)
 
-	createExpenseUC := expenseApp.NewCreateExpenseUseCase(expenseRepo, budgetRepo, userRepo, nil)
+	createExpenseUC := expenseApp.NewCreateExpenseUseCase(expenseRepo, budgetRepo, userRepo, emailMailer)
 	listExpensesUC := expenseApp.NewListExpensesUseCase(expenseRepo)
 	updateExpenseUC := expenseApp.NewUpdateExpenseUseCase(expenseRepo)
 	deleteExpenseUC := expenseApp.NewDeleteExpenseUseCase(expenseRepo)
@@ -143,6 +153,9 @@ func main() {
 	listREUC := reApp.NewListRecurringExpensesUseCase(reRepo)
 	updateREUC := reApp.NewUpdateRecurringExpenseUseCase(reRepo)
 	deleteREUC := reApp.NewDeleteRecurringExpenseUseCase(reRepo)
+
+	sendRecurringUC := alertApp.NewSendRecurringAlertsUseCase(reRepo, userRepo, emailMailer, timeutil.RealClock{})
+	sendWeeklyUC := alertApp.NewSendWeeklySummaryUseCase(userRepo, expenseRepo, emailMailer, timeutil.RealClock{})
 
 	// ── Presentation ────────────────────────────────────────────────
 
@@ -221,6 +234,17 @@ func main() {
 	srvCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	go runDailyAt(srvCtx, logger, 8, 0, func() {
+		if err := sendRecurringUC.Execute(srvCtx); err != nil {
+			logger.Error("send recurring alerts failed", "error", err)
+		}
+	})
+	go runWeeklyOnMondayAt(srvCtx, logger, 8, 0, func() {
+		if err := sendWeeklyUC.Execute(srvCtx); err != nil {
+			logger.Error("send weekly summary failed", "error", err)
+		}
+	})
+
 	go func() {
 		logger.Info("http server listening", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -235,4 +259,64 @@ func main() {
 	_ = srv.Shutdown(shutdownCtx)
 	_ = db.Close()
 	logger.Info("shutdown complete")
+}
+
+func runDailyAt(ctx context.Context, logger *slog.Logger, hour, minute int, fn func()) {
+	for {
+		now := time.Now()
+		next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
+		if !next.After(now) {
+			next = next.Add(24 * time.Hour)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Until(next)):
+		}
+		logger.Info("running daily job")
+		fn()
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				logger.Info("running daily job")
+				fn()
+			}
+		}
+	}
+}
+
+func runWeeklyOnMondayAt(ctx context.Context, logger *slog.Logger, hour, minute int, fn func()) {
+	for {
+		now := time.Now()
+		daysUntilMonday := (int(time.Monday) - int(now.Weekday()) + 7) % 7
+		if daysUntilMonday == 0 {
+			next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
+			if !next.After(now) {
+				daysUntilMonday = 7
+			}
+		}
+		next := time.Date(now.Year(), now.Month(), now.Day()+daysUntilMonday, hour, minute, 0, 0, now.Location())
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Until(next)):
+		}
+		logger.Info("running weekly job")
+		fn()
+		ticker := time.NewTicker(7 * 24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				logger.Info("running weekly job")
+				fn()
+			}
+		}
+	}
 }
