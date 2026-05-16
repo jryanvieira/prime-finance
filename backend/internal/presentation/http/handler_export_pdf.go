@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"regexp"
 
 	appCashflow "dash-fin/internal/application/cashflow"
 
@@ -26,6 +27,12 @@ func (h *exportPDFHandler) handleExportPDF(w http.ResponseWriter, r *http.Reques
 	month := chi.URLParam(r, "month")
 	if month == "" {
 		writeError(w, http.StatusBadRequest, "bad_request", "month is required")
+		return
+	}
+
+	matched, _ := regexp.MatchString(`^\d{4}-\d{2}$`, month)
+	if !matched {
+		writeError(w, http.StatusBadRequest, "bad_request", "month must be YYYY-MM")
 		return
 	}
 
