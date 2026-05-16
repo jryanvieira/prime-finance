@@ -23,12 +23,20 @@ Thumbs.db
 # Go
 /backend/bin/
 /backend/tmp/
+backend/*.exe
+backend/*.exe~
 
 # Node
 node_modules/
 .next/
 dist/
 build/
+tsconfig.tsbuildinfo
+package-lock.json
+
+# Backup files
+*~
+*.bak
 
 # Claude Code (ferramentas de desenvolvimento, não artefatos do produto)
 .claude/
