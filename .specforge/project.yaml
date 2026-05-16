@@ -1,0 +1,15 @@
+project:
+  name: "prime-finance"
+  description: "Personal finance dashboard — expenses, budgets, goals, cashflow, CSV import/export"
+  language: pt-BR
+
+artifacts:
+  path: "C:/Users/joaor/OneDrive/Documentos/SecondBrain/Projetos/prime-finance"
+
+issue_tracker:
+  type: linear
+  workspace: "zempidesenvolvimento"
+
+execution:
+  backend: worktrunk
+  platform: windows

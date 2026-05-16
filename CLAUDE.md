@@ -102,12 +102,16 @@ Critérios fracos ("faça funcionar") exigem esclarecimentos constantes.
 
 ## Diretrizes do Projeto — prime-finance
 
-### Obrigatório antes de escrever qualquer código
+### SpecForge — framework de desenvolvimento
 
-Leia as skills em `backend/.claude/skills/`:
-- `ddd-expert.md` — arquitetura DDD aplicada a este projeto
-- `project-expert.md` — mapa real do repositório, contratos e decisões tomadas
-- `lessons-learned.md` — erros já registrados que não devem se repetir
+Este projeto usa o **SpecForge** como framework de desenvolvimento. Antes de escrever qualquer código:
+
+1. Leia `.specforge/project.yaml` — configuração do projeto
+2. Leia `.specforge/STATE.md` — decisões tomadas e lessons learned
+3. Leia `.specforge/architecture/ddd-expert.md` — arquitetura DDD
+4. Leia `.specforge/architecture/conventions.md` — convenções de código
+
+Para o workflow completo, use o skill `/specforge` ou o `/workflow`.
 
 ### Convenções invioláveis
 
@@ -127,24 +131,9 @@ Leia as skills em `backend/.claude/skills/`:
 - Logger: `slog` estruturado
 - Frontend: Next.js · TypeScript · Tailwind · shadcn/ui
 
-### Sistema de agents disponíveis
-
-Invoque via `claude "rode o agent-[nome] ..."` no terminal:
-
-| Agent | Skill | Quando usar |
-|---|---|---|
-| PO | `agent-po.md` | Propor e priorizar features |
-| Spec | `agent-spec.md` | Transformar issue em spec técnica |
-| Plan | `agent-plan.md` | Quebrar spec em tasks paralelas |
-| Executor | `agent-executor.md` | Orquestrar execução com Worktrunk |
-| PR | `agent-pr.md` | Abrir Pull Request no GitHub |
-| Review | `agent-review.md` | Revisar PR em 4 perspectivas |
-
 ### Paths importantes
 
 - Backend: `C:\Users\joaor\OneDrive\Documentos\Projetos\prime-finance\prime-finance\backend`
 - Frontend: `C:\Users\joaor\OneDrive\Documentos\Projetos\prime-finance\prime-finance\frontend`
-- Specs: `C:\Users\joaor\OneDrive\Documentos\SecondBrain\Projetos\prime-finance\specs\`
-- Plans: `C:\Users\joaor\OneDrive\Documentos\SecondBrain\Projetos\prime-finance\plans\`
-- Template spec: `specs\_template-spec-sdd.md`
-- Template plan: `plans\_template-plan.md`
+- SpecForge config: `.specforge/`
+- Specs/Plans (SecondBrain): `C:\Users\joaor\OneDrive\Documentos\SecondBrain\Projetos\prime-finance\`
