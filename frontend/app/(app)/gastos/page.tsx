@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import {
   PlusIcon,
   SearchIcon,
@@ -53,26 +53,20 @@ import { Badge } from '@/components/ui/badge'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  expensesService,
-  paymentMethodsService,
-  categoriesService,
   importService,
   exportService,
   type Expense,
-  type PaymentMethod,
-  type Category,
   type ImportResult,
 } from '@/lib/api'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { StatsCard } from '@/components/stats-card'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
+import { useExpenses, useCreateExpense, useUpdateExpense, useDeleteExpense } from '@/hooks/use-expenses'
+import { usePaymentMethods } from '@/hooks/use-payment-methods'
+import { useCategories } from '@/hooks/use-categories'
 
 export default function GastosPage() {
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -105,51 +99,39 @@ export default function GastosPage() {
     installments: '1',
   })
 
-  useEffect(() => {
-    void loadStaticData()
-  }, [])
-
-  useEffect(() => {
-    void loadExpenses()
-  }, [currentMonth, viewMode])
-
-  const loadStaticData = async () => {
-    const [pmData, catData] = await Promise.all([
-      paymentMethodsService.list(),
-      categoriesService.list('expense'),
-    ])
-    setPaymentMethods(pmData)
-    setCategories(catData)
-  }
-
-  const loadExpenses = async () => {
-    try {
-      setLoading(true)
-      let from = '2000-01-01'
-      let to = '2100-12-31'
-      
-      if (viewMode === 'monthly') {
-        const y = currentMonth.getFullYear()
-        const m = currentMonth.getMonth()
-        from = new Date(y, m, 1).toISOString().split('T')[0]
-        to = new Date(y, m + 1, 0).toISOString().split('T')[0]
-      }
-
-      const expData = await expensesService.list({ from, to })
-      setExpenses(expData)
-    } finally {
-      setLoading(false)
+  // Compute filters for query key
+  const filters = useMemo(() => {
+    if (viewMode === 'all') {
+      return { from: '2000-01-01', to: '2100-12-31' }
     }
-  }
+    const y = currentMonth.getFullYear()
+    const m = currentMonth.getMonth()
+    return {
+      from: new Date(y, m, 1).toISOString().split('T')[0],
+      to: new Date(y, m + 1, 0).toISOString().split('T')[0],
+    }
+  }, [viewMode, currentMonth])
+
+  // Queries
+  const expensesQuery = useExpenses(filters)
+  const paymentMethodsQuery = usePaymentMethods()
+  const categoriesQuery = useCategories('expense')
+
+  const expenses = expensesQuery.data ?? []
+  const paymentMethods = paymentMethodsQuery.data ?? []
+  const categories = categoriesQuery.data ?? []
+  const loading = expensesQuery.isPending
+
+  // Mutations
+  const createExpense = useCreateExpense()
+  const updateExpense = useUpdateExpense()
+  const deleteExpense = useDeleteExpense()
+  const queryClient = useQueryClient()
 
   const handleExportCSV = async () => {
     try {
       setExportLoading(true)
-      const y = currentMonth.getFullYear()
-      const m = currentMonth.getMonth()
-      const from = new Date(y, m, 1).toISOString().split('T')[0]
-      const to = new Date(y, m + 1, 0).toISOString().split('T')[0]
-      await exportService.downloadCSV(from, to)
+      await exportService.downloadCSV(filters.from, filters.to)
     } catch {
       toast.error('Não foi possível exportar o CSV. Tente novamente.')
     } finally {
@@ -171,7 +153,7 @@ export default function GastosPage() {
         .includes(searchQuery.toLowerCase())
       const matchesCategory = categoryFilter === 'all' || (expense.category || 'Sem categoria') === categoryFilter
       const matchesPM = paymentMethodFilter === 'all' || expense.payment_method_id === paymentMethodFilter
-      
+
       let matchesType = true
       if (typeFilter === 'installment') matchesType = (expense.installments_count || 1) > 1
       if (typeFilter === 'single') matchesType = (expense.installments_count || 1) === 1
@@ -181,7 +163,7 @@ export default function GastosPage() {
   }, [expenses, searchQuery, categoryFilter, paymentMethodFilter, typeFilter])
 
   const totalFiltered = useMemo(() => filteredExpenses.reduce((sum, exp) => sum + exp.amount_cents, 0), [filteredExpenses])
-  
+
   const biggestExpense = useMemo(() => {
     if (filteredExpenses.length === 0) return 0
     return Math.max(...filteredExpenses.map(e => e.amount_cents))
@@ -191,30 +173,35 @@ export default function GastosPage() {
     const amountCents = Math.round(parseFloat(formData.amount) * 100)
     const installments = parseInt(formData.installments) || 1
 
-    if (editingExpense) {
-      await expensesService.update(editingExpense.id, {
-        description: formData.description,
-        amount_cents: amountCents,
-        date: formData.date,
-        category: formData.category || undefined,
-        payment_method_id: formData.payment_method_id || undefined,
-      })
-    } else {
-      await expensesService.create({
-        description: formData.description,
-        date: formData.date,
-        category: formData.category || undefined,
-        payment_method_id: formData.payment_method_id || undefined,
-        ...(installments > 1
-          ? { installments_count: installments, monthly_amount_cents: amountCents }
-          : { amount_cents: amountCents }),
-      })
+    try {
+      if (editingExpense) {
+        await updateExpense.mutateAsync({
+          id: editingExpense.id,
+          data: {
+            description: formData.description,
+            amount_cents: amountCents,
+            date: formData.date,
+            category: formData.category || undefined,
+            payment_method_id: formData.payment_method_id || undefined,
+          },
+        })
+      } else {
+        await createExpense.mutateAsync({
+          description: formData.description,
+          date: formData.date,
+          category: formData.category || undefined,
+          payment_method_id: formData.payment_method_id || undefined,
+          ...(installments > 1
+            ? { installments_count: installments, monthly_amount_cents: amountCents }
+            : { amount_cents: amountCents }),
+        })
+      }
+      resetForm()
+      setIsCreateOpen(false)
+      setEditingExpense(null)
+    } catch {
+      toast.error('Não foi possível salvar o gasto.')
     }
-
-    await loadExpenses()
-    resetForm()
-    setIsCreateOpen(false)
-    setEditingExpense(null)
   }
 
   const handleEdit = (expense: Expense) => {
@@ -231,8 +218,7 @@ export default function GastosPage() {
   }
 
   const handleDelete = async (id: string) => {
-    await expensesService.delete(id)
-    await loadExpenses()
+    await deleteExpense.mutateAsync(id)
   }
 
   const resetForm = () => {
@@ -256,7 +242,7 @@ export default function GastosPage() {
         importPaymentMethod || undefined
       )
       setImportResult(result)
-      await loadExpenses()
+      queryClient.invalidateQueries({ queryKey: ['expenses'] })
     } catch (err: any) {
       toast.error(err?.message || 'Não foi possível importar o arquivo. Verifique o formato e tente novamente.')
     } finally {
@@ -346,7 +332,7 @@ export default function GastosPage() {
               <DialogHeader>
                 <DialogTitle>Importar do Nubank</DialogTitle>
                 <DialogDescription>
-                  Faça upload do extrato CSV exportado do app 
+                  Faça upload do extrato CSV exportado do app
                 </DialogDescription>
               </DialogHeader>
 
@@ -611,7 +597,9 @@ export default function GastosPage() {
                     !formData.description ||
                     !formData.amount ||
                     !formData.category ||
-                    !formData.payment_method_id
+                    !formData.payment_method_id ||
+                    createExpense.isPending ||
+                    updateExpense.isPending
                   }
                 >
                   {editingExpense ? 'Gravar Alterações' : 'Confirmar Gasto'}
@@ -625,16 +613,16 @@ export default function GastosPage() {
       {/* Resumo Superior Analítico */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
         <div className="flex items-center gap-2 bg-card/60 backdrop-blur-md border border-border/60 rounded-lg p-1 shadow-sm w-fit">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             className={viewMode === 'monthly' ? 'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary' : 'text-muted-foreground hover:text-foreground'}
             onClick={() => setViewMode('monthly')}
           >
             Mensal
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             className={viewMode === 'all' ? 'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary' : 'text-muted-foreground hover:text-foreground'}
             onClick={() => setViewMode('all')}
@@ -686,9 +674,9 @@ export default function GastosPage() {
       {/* Advanced Action Toolbar */}
       <Card className="border-none bg-card/60 backdrop-blur-md shadow-sm flex flex-col sm:flex-row gap-4 p-4 items-start sm:items-center justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <Button 
-            variant={paymentMethodFilter === 'all' ? 'default' : 'secondary'} 
-            size="sm" 
+          <Button
+            variant={paymentMethodFilter === 'all' ? 'default' : 'secondary'}
+            size="sm"
             className="rounded-full px-4 transition-all"
             onClick={() => setPaymentMethodFilter('all')}
           >
@@ -778,35 +766,35 @@ export default function GastosPage() {
               <h3 className="text-sm font-semibold tracking-wide text-muted-foreground ml-1 flex items-center gap-2">
                 <span className="bg-muted px-2 py-1 rounded-md text-foreground/80">{formatDate(date)}</span>
               </h3>
-              
+
               <div className="flex flex-col divide-y divide-border/40 bg-card/80 backdrop-blur-md shadow-sm border border-border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-md">
                 {groupedExpenses[date].map((expense) => {
                   const paymentMethod = paymentMethods.find((p) => p.id === expense.payment_method_id)
                   const category = categories.find((c) => c.name === expense.category)
-                  
+
                   return (
                     <div key={expense.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-transparent hover:bg-accent/30 transition-colors gap-4">
-                      
+
                       <div className="flex items-center gap-4">
-                        <div 
+                        <div
                           className="flex size-12 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105 shadow-sm"
                           style={{ backgroundColor: category ? `${category.color}25` : 'var(--muted)' }}
                         >
                           <Receipt className="size-5" style={{ color: category ? category.color : 'inherit' }} />
                         </div>
-                        
+
                         <div className="flex flex-col gap-1">
                           <span className="font-semibold text-foreground tracking-tight text-[15px]">
                             {expense.description}
                           </span>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                            <Badge 
-                              variant="secondary" 
+                            <Badge
+                              variant="secondary"
                               className="font-normal px-2 py-0 border-transparent bg-background text-muted-foreground shadow-xs"
                             >
                               {expense.category || 'Sem categoria'}
                             </Badge>
-                            
+
                             {paymentMethod && (
                               <div className="flex items-center gap-1 text-muted-foreground font-medium">
                                 <span className="size-1.5 rounded-full" style={{ backgroundColor: paymentMethod.color || '#CBD5E1' }} />
@@ -830,7 +818,7 @@ export default function GastosPage() {
                         <span className="font-semibold text-foreground/90 text-right text-lg tracking-tight whitespace-nowrap">
                           {formatCurrency(expense.amount_cents)}
                         </span>
-                        
+
                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <Button
                             variant="ghost"
@@ -845,12 +833,13 @@ export default function GastosPage() {
                             size="icon"
                             className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDelete(expense.id)}
+                            disabled={deleteExpense.isPending}
                           >
                             <Trash2Icon className="size-4" />
                           </Button>
                         </div>
                       </div>
-                      
+
                     </div>
                   )
                 })}

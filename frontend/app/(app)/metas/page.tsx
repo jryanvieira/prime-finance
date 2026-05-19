@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { PlusIcon, Trash2Icon, Target, PiggyBank } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -15,63 +15,46 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
-import { goalsService, type Goal } from '@/lib/api'
+import { type Goal } from '@/lib/api'
 import { formatCurrency } from '@/lib/format'
 import { ProgressBar } from '@/components/ui/progress-bar'
+import { useGoals, useCreateGoal, useUpdateGoal, useContributeGoal, useDeleteGoal } from '@/hooks/use-goals'
 
 const emptyGoalForm = { name: '', target: '', deadline: '' }
 
 export default function MetasPage() {
-  const [goals, setGoals] = useState<Goal[]>([])
-  const [loading, setLoading] = useState(true)
-
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState(emptyGoalForm)
-  const [saving, setSaving] = useState(false)
 
   const [editGoal, setEditGoal] = useState<Goal | null>(null)
   const [editForm, setEditForm] = useState(emptyGoalForm)
-  const [editSaving, setEditSaving] = useState(false)
 
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null)
   const [contributeAmount, setContributeAmount] = useState('')
-  const [contributeSaving, setContributeSaving] = useState(false)
 
   const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
 
-  useEffect(() => {
-    void load()
-  }, [])
+  const goalsQuery = useGoals()
+  const createGoal = useCreateGoal()
+  const updateGoal = useUpdateGoal()
+  const contributeGoalMutation = useContributeGoal()
+  const deleteGoal = useDeleteGoal()
 
-  const load = async () => {
-    try {
-      setLoading(true)
-      const data = await goalsService.list()
-      setGoals(data)
-    } catch {
-      toast.error('Não foi possível carregar as metas.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const goals = goalsQuery.data ?? []
+  const loading = goalsQuery.isPending
 
   const handleCreate = async () => {
     if (!createForm.name || !createForm.target) return
     try {
-      setSaving(true)
-      await goalsService.create({
+      await createGoal.mutateAsync({
         name: createForm.name,
         target_amount_cents: Math.round(parseFloat(createForm.target) * 100),
         deadline: createForm.deadline || null,
       })
       setIsCreateOpen(false)
       setCreateForm(emptyGoalForm)
-      await load()
     } catch {
       toast.error('Erro ao criar meta.')
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -87,49 +70,41 @@ export default function MetasPage() {
   const handleUpdate = async () => {
     if (!editGoal || !editForm.name || !editForm.target) return
     try {
-      setEditSaving(true)
-      await goalsService.update(editGoal.id, {
-        name: editForm.name,
-        target_amount_cents: Math.round(parseFloat(editForm.target) * 100),
-        deadline: editForm.deadline || null,
+      await updateGoal.mutateAsync({
+        id: editGoal.id,
+        data: {
+          name: editForm.name,
+          target_amount_cents: Math.round(parseFloat(editForm.target) * 100),
+          deadline: editForm.deadline || null,
+        },
       })
       setEditGoal(null)
-      await load()
     } catch {
       toast.error('Erro ao atualizar meta.')
-    } finally {
-      setEditSaving(false)
     }
   }
 
   const handleContribute = async () => {
     if (!contributeGoal || !contributeAmount) return
     try {
-      setContributeSaving(true)
-      await goalsService.contribute(contributeGoal.id, {
-        amount_cents: Math.round(parseFloat(contributeAmount) * 100),
+      await contributeGoalMutation.mutateAsync({
+        id: contributeGoal.id,
+        data: { amount_cents: Math.round(parseFloat(contributeAmount) * 100) },
       })
       setContributeGoal(null)
       setContributeAmount('')
-      await load()
     } catch {
       toast.error('Erro ao registrar contribuição.')
-    } finally {
-      setContributeSaving(false)
     }
   }
 
   const handleDelete = async () => {
     if (!deleteGoalId) return
     try {
-      setDeleting(true)
-      await goalsService.delete(deleteGoalId)
+      await deleteGoal.mutateAsync(deleteGoalId)
       setDeleteGoalId(null)
-      await load()
     } catch {
       toast.error('Erro ao deletar meta.')
-    } finally {
-      setDeleting(false)
     }
   }
 
@@ -181,8 +156,8 @@ export default function MetasPage() {
               </Field>
             </FieldGroup>
             <DialogFooter>
-              <Button onClick={() => void handleCreate()} disabled={saving}>
-                {saving ? 'Salvando...' : 'Criar meta'}
+              <Button onClick={() => void handleCreate()} disabled={createGoal.isPending}>
+                {createGoal.isPending ? 'Salvando...' : 'Criar meta'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -225,8 +200,8 @@ export default function MetasPage() {
             </Field>
           </FieldGroup>
           <DialogFooter>
-            <Button onClick={() => void handleUpdate()} disabled={editSaving}>
-              {editSaving ? 'Salvando...' : 'Salvar'}
+            <Button onClick={() => void handleUpdate()} disabled={updateGoal.isPending}>
+              {updateGoal.isPending ? 'Salvando...' : 'Salvar'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -261,8 +236,8 @@ export default function MetasPage() {
             </Field>
           </FieldGroup>
           <DialogFooter>
-            <Button onClick={() => void handleContribute()} disabled={contributeSaving}>
-              {contributeSaving ? 'Salvando...' : 'Confirmar'}
+            <Button onClick={() => void handleContribute()} disabled={contributeGoalMutation.isPending}>
+              {contributeGoalMutation.isPending ? 'Salvando...' : 'Confirmar'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -277,8 +252,8 @@ export default function MetasPage() {
           <p className="text-sm text-muted-foreground">Tem certeza que deseja deletar esta meta? Esta ação não pode ser desfeita.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteGoalId(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={() => void handleDelete()} disabled={deleting}>
-              {deleting ? 'Deletando...' : 'Deletar'}
+            <Button variant="destructive" onClick={() => void handleDelete()} disabled={deleteGoal.isPending}>
+              {deleteGoal.isPending ? 'Deletando...' : 'Deletar'}
             </Button>
           </DialogFooter>
         </DialogContent>
