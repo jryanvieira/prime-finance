@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { PlusIcon, Trash2Icon, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,8 +21,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
-import { budgetsService, categoriesService, type Budget, type Category } from '@/lib/api'
 import { formatCurrency } from '@/lib/format'
+import { useBudgets, useUpsertBudget, useDeleteBudget } from '@/hooks/use-budgets'
+import { useCategories } from '@/hooks/use-categories'
 
 function BudgetProgressBar({ percentage }: { percentage: number }) {
   const capped = Math.min(percentage, 100)
@@ -45,53 +46,32 @@ function BudgetProgressBar({ percentage }: { percentage: number }) {
 }
 
 export default function OrcamentosPage() {
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
   const [currentMonth, setCurrentMonth] = useState(() => new Date().toISOString().slice(0, 7))
-
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [formData, setFormData] = useState({ category_id: '', amount: '' })
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    void load()
-  }, [currentMonth])
+  const budgetsQuery = useBudgets(currentMonth)
+  const categoriesQuery = useCategories('expense')
+  const upsertBudget = useUpsertBudget(currentMonth)
+  const deleteBudget = useDeleteBudget()
 
-  const load = async () => {
-    try {
-      setLoading(true)
-      const [b, cats] = await Promise.all([
-        budgetsService.list(currentMonth),
-        categoriesService.list('expense'),
-      ])
-      setBudgets(b)
-      setCategories(cats)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const budgets = budgetsQuery.data ?? []
+  const categories = categoriesQuery.data ?? []
+  const loading = budgetsQuery.isPending
 
   const handleSave = async () => {
     if (!formData.category_id || !formData.amount) return
-    try {
-      setSaving(true)
-      await budgetsService.upsert({
-        category_id: formData.category_id,
-        month: currentMonth,
-        amount_cents: Math.round(parseFloat(formData.amount) * 100),
-      })
-      setIsCreateOpen(false)
-      setFormData({ category_id: '', amount: '' })
-      await load()
-    } finally {
-      setSaving(false)
-    }
+    await upsertBudget.mutateAsync({
+      category_id: formData.category_id,
+      month: currentMonth,
+      amount_cents: Math.round(parseFloat(formData.amount) * 100),
+    })
+    setIsCreateOpen(false)
+    setFormData({ category_id: '', amount: '' })
   }
 
   const handleDelete = async (id: string) => {
-    await budgetsService.delete(id)
-    await load()
+    await deleteBudget.mutateAsync(id)
   }
 
   const formatMonth = (m: string) => {
@@ -167,8 +147,8 @@ export default function OrcamentosPage() {
                 </Field>
               </FieldGroup>
               <DialogFooter>
-                <Button onClick={() => void handleSave()} disabled={saving}>
-                  {saving ? 'Salvando...' : 'Salvar'}
+                <Button onClick={() => void handleSave()} disabled={upsertBudget.isPending}>
+                  {upsertBudget.isPending ? 'Salvando...' : 'Salvar'}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -239,6 +219,7 @@ export default function OrcamentosPage() {
                         size="icon"
                         className="size-8 text-muted-foreground hover:text-destructive"
                         onClick={() => void handleDelete(b.id)}
+                        disabled={deleteBudget.isPending}
                       >
                         <Trash2Icon className="size-4" />
                       </Button>

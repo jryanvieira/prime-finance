@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CalendarClock, Receipt, TrendingDown, TrendingUp, Wallet, AlertTriangle, Target } from 'lucide-react'
 
-import { dashboardService, expensesService, paymentMethodsService, recurringExpensesService, incomesService, categoriesService, budgetsService, goalsService, usersService, type Expense, type Income, type CategorySummaryItem, type Category, type Budget, type Goal, type RecurringExpense, type PaymentMethod } from '@/lib/api'
+import { type Expense } from '@/lib/api'
 import { toast } from 'sonner'
 import { OnboardingWizard } from '@/components/onboarding-wizard'
 import { formatCurrency } from '@/lib/format'
@@ -14,82 +14,64 @@ import { StatsCard } from '@/components/stats-card'
 import { ExpenseCard } from '@/components/expense-card'
 import { ExpenseChart } from '@/components/expense-chart'
 import { CategoryChart } from '@/components/category-chart'
+import {
+  useDashboardExpenses,
+  useDashboardRecurring,
+  useDashboardRecurringTotal,
+  useDashboardPaymentMethods,
+  useDashboardEvolution,
+  useDashboardIncomes,
+  useDashboardCategorySummary,
+  useDashboardCategories,
+  useDashboardBudgets,
+  useDashboardGoals,
+  useDashboardMe,
+  useDashboardInvalidate,
+} from '@/hooks/use-dashboard'
 
 export default function DashboardPage() {
-  const [userName, setUserName] = useState('')
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [recurringExpensesTotal, setRecurringExpensesTotal] = useState(0)
-  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([])
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-  const [monthIncomes, setMonthIncomes] = useState(0)
-  const [chartData, setChartData] = useState<Array<{ month: string; total: number }>>([])
-  const [categorySummary, setCategorySummary] = useState<CategorySummaryItem[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [goals, setGoals] = useState<Goal[]>([])
   const [showOnboarding, setShowOnboarding] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const invalidateDashboard = useDashboardInvalidate()
 
-  useEffect(() => {
-    void loadDashboard()
-  }, [])
+  const meQuery = useDashboardMe()
+  const expensesQuery = useDashboardExpenses()
+  const recurringQuery = useDashboardRecurring()
+  const recurringTotalQuery = useDashboardRecurringTotal()
+  const paymentMethodsQuery = useDashboardPaymentMethods()
+  const evolutionQuery = useDashboardEvolution()
+  const incomesQuery = useDashboardIncomes()
+  const categorySummaryQuery = useDashboardCategorySummary()
+  const categoriesQuery = useDashboardCategories()
+  const budgetsQuery = useDashboardBudgets()
+  const goalsQuery = useDashboardGoals()
 
-  const loadDashboard = async () => {
-    try {
-      setLoading(true)
-      const savedAuth = localStorage.getItem('prime-finance-auth')
-      if (savedAuth) {
-        const user = JSON.parse(savedAuth)
-        setUserName(user.name || user.email || 'Usuario')
-      }
+  const loading = expensesQuery.isPending || recurringQuery.isPending || budgetsQuery.isPending
 
-      const now = new Date()
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
-
-      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-      const me = await usersService.getMe().catch(() => null)
-      if (me && !me.onboarding_completed) setShowOnboarding(true)
-
-      const [monthExpenses, recurringList, recurring, pmList, evolution, incomes, catSummary, cats, budgetsData, goalsData] = await Promise.all([
-        expensesService.getByMonth(now.getFullYear(), now.getMonth() + 1),
-        recurringExpensesService.list(),
-        recurringExpensesService.getMonthlyTotal(),
-        paymentMethodsService.list(),
-        dashboardService.getMonthlyEvolution(6),
-        incomesService.list({ from: monthStart, to: monthEnd }),
-        dashboardService.getCategorySummary(monthKey),
-        categoriesService.list('expense'),
-        budgetsService.list(monthKey),
-        goalsService.list(),
-      ])
-      setExpenses(monthExpenses)
-      setRecurringExpenses(recurringList)
-      setRecurringExpensesTotal(recurring)
-      setPaymentMethods(pmList)
-      setChartData(evolution)
-      setMonthIncomes(incomes.reduce((sum, inc) => sum + inc.amount_cents, 0))
-      setCategorySummary(catSummary)
-      setCategories(cats)
-      setBudgets(budgetsData)
-      setGoals(goalsData)
-    } catch {
-      toast.error('Não foi possível carregar os dados do dashboard. Tente recarregar a página.')
-      setExpenses([])
-      setRecurringExpenses([])
-      setRecurringExpensesTotal(0)
-      setChartData([])
-      setMonthIncomes(0)
-      setCategorySummary([])
-      setCategories([])
-      setBudgets([])
-      setGoals([])
-    } finally {
-      setLoading(false)
+  const me = meQuery.data
+  const userName = (() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('prime-finance-auth') : null
+    if (saved) {
+      try { return JSON.parse(saved)?.name || JSON.parse(saved)?.email || 'Usuário' } catch { return 'Usuário' }
     }
+    return me?.name || me?.email || 'Usuário'
+  })()
+
+  if (me && !me.onboarding_completed && !showOnboarding) {
+    setShowOnboarding(true)
   }
 
-  // Calcular estatísticas
+  const expenses = expensesQuery.data ?? []
+  const recurringExpenses = recurringQuery.data ?? []
+  const recurringExpensesTotal = recurringTotalQuery.data ?? 0
+  const paymentMethods = paymentMethodsQuery.data ?? []
+  const chartData = evolutionQuery.data ?? []
+  const incomes = incomesQuery.data ?? []
+  const categorySummary = categorySummaryQuery.data ?? []
+  const categories = categoriesQuery.data ?? []
+  const budgets = budgetsQuery.data ?? []
+  const goals = goalsQuery.data ?? []
+
+  const monthIncomes = incomes.reduce((sum, inc) => sum + inc.amount_cents, 0)
   const totalMonth = expenses.reduce((acc, exp) => acc + exp.amount_cents, 0)
   const totalRecurring = recurringExpensesTotal
   const lastMonthTotal = chartData[chartData.length - 2]?.total || 0
@@ -98,7 +80,6 @@ export default function DashboardPage() {
     : 0
   const balance = monthIncomes - totalMonth
 
-  // Próximos gastos fixos (próximos 7 dias pelo day_of_month)
   const today = new Date()
   const currentDay = today.getDate()
   const upcomingRecurring = recurringExpenses
@@ -112,13 +93,13 @@ export default function DashboardPage() {
   return (
     <>
     {showOnboarding && (
-      <OnboardingWizard onComplete={() => { setShowOnboarding(false); void loadDashboard() }} />
+      <OnboardingWizard onComplete={() => { setShowOnboarding(false); invalidateDashboard() }} />
     )}
     <div className="flex flex-col gap-8">
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Olá, {userName || 'Usuário'}
+          Olá, {userName}
         </h1>
         <p className="text-muted-foreground">
           Aqui está um resumo das suas finanças deste mês.
