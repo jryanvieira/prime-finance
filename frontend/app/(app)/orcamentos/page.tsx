@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { PlusIcon, Trash2Icon, Target } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,17 +62,25 @@ export default function OrcamentosPage() {
 
   const handleSave = async () => {
     if (!formData.category_id || !formData.amount) return
-    await upsertBudget.mutateAsync({
-      category_id: formData.category_id,
-      month: currentMonth,
-      amount_cents: Math.round(parseFloat(formData.amount) * 100),
-    })
-    setIsCreateOpen(false)
-    setFormData({ category_id: '', amount: '' })
+    try {
+      await upsertBudget.mutateAsync({
+        category_id: formData.category_id,
+        month: currentMonth,
+        amount_cents: Math.round(parseFloat(formData.amount) * 100),
+      })
+      setIsCreateOpen(false)
+      setFormData({ category_id: '', amount: '' })
+    } catch {
+      toast.error('Não foi possível salvar o orçamento.')
+    }
   }
 
   const handleDelete = async (id: string) => {
-    await deleteBudget.mutateAsync(id)
+    try {
+      await deleteBudget.mutateAsync(id)
+    } catch {
+      toast.error('Não foi possível remover o orçamento.')
+    }
   }
 
   const formatMonth = (m: string) => {
