@@ -9,13 +9,12 @@ import {
   type PaymentMethod,
   type Category,
 } from '@/lib/api'
+import { useDashboardPaymentMethods, useDashboardCategories } from '@/hooks/use-dashboard'
 
 interface AddTransactionSheetProps {
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
   onSuccess?: () => void
-  paymentMethods: PaymentMethod[]
-  categories: Category[]
 }
 
 function getPaymentMethodColor(label: string): string {
@@ -29,11 +28,11 @@ function getPaymentMethodColor(label: string): string {
 
 export function AddTransactionSheet({
   open,
-  onOpenChange,
+  onClose,
   onSuccess,
-  paymentMethods,
-  categories,
 }: AddTransactionSheetProps) {
+  const { data: paymentMethods = [] } = useDashboardPaymentMethods()
+  const { data: categories = [] } = useDashboardCategories()
   const [tipo, setTipo] = useState<'despesa' | 'receita'>('despesa')
   const [valorDisplay, setValorDisplay] = useState('')
   const [amountCents, setAmountCents] = useState(0)
@@ -77,7 +76,7 @@ export function AddTransactionSheet({
           is_recurring: recorrente,
         })
       }
-      onOpenChange(false)
+      onClose()
       onSuccess?.()
       setValorDisplay('')
       setAmountCents(0)
@@ -97,7 +96,7 @@ export function AddTransactionSheet({
   )
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[480px] flex flex-col p-0">
 
         {/* Header */}
@@ -252,7 +251,7 @@ export function AddTransactionSheet({
         {/* Footer */}
         <div className="px-7 py-5 border-t border-[--line] flex gap-3">
           <button
-            onClick={() => onOpenChange(false)}
+            onClick={() => onClose()}
             className="flex-1 py-3 rounded-full border border-[--line] text-sm font-medium text-[--ink-2] hover:bg-[--surface-2] transition-colors"
           >
             Cancelar
