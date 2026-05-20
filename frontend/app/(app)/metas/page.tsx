@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusIcon, Trash2Icon, Target, PiggyBank } from 'lucide-react'
+import { PlusIcon, PiggyBank } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -17,10 +17,132 @@ import {
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { type Goal } from '@/lib/api'
 import { formatCurrency } from '@/lib/format'
-import { ProgressBar } from '@/components/ui/progress-bar'
-import { useGoals, useCreateGoal, useUpdateGoal, useContributeGoal, useDeleteGoal } from '@/hooks/use-goals'
+import { useDashboardGoals } from '@/hooks/use-dashboard'
+import { useCreateGoal, useUpdateGoal, useContributeGoal, useDeleteGoal } from '@/hooks/use-goals'
 
 const emptyGoalForm = { name: '', target: '', deadline: '' }
+
+function formatDeadline(deadline: string) {
+  return new Date(deadline + 'T00:00:00').toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function GoalCard({
+  g,
+  onContribute,
+  onEdit,
+  onDelete,
+}: {
+  g: Goal
+  onContribute: (g: Goal) => void
+  onEdit: (g: Goal) => void
+  onDelete: (id: string) => void
+}) {
+  const onTrack = g.on_track
+  const pct = Math.min(100, g.percentage)
+  const dailyRequired = g.monthly_required_cents > 0
+    ? Math.round(g.monthly_required_cents / 30)
+    : 0
+
+  return (
+    <Card className="flex flex-col gap-0 overflow-hidden">
+      <div className="flex flex-col gap-1 p-4 pb-2">
+        {/* Eyebrow */}
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+          PLANEJAMENTO
+        </p>
+
+        {/* Header: nome + percentual */}
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-[22px] font-semibold leading-tight">{g.name}</span>
+          <span
+            className="text-[28px] font-semibold italic leading-tight shrink-0"
+            style={{ color: onTrack ? 'oklch(0.55 0.15 145)' : 'oklch(0.65 0.18 55)' }}
+          >
+            {pct.toFixed(0)}%
+          </span>
+        </div>
+
+        {/* Prazo */}
+        {g.deadline && (
+          <p className="font-mono text-sm text-muted-foreground">
+            prazo · {formatDeadline(g.deadline)}
+          </p>
+        )}
+
+        {/* Status eyebrow */}
+        <p
+          className="text-[10px] uppercase tracking-widest font-semibold"
+          style={{ color: onTrack ? 'oklch(0.55 0.15 145)' : 'oklch(0.65 0.18 55)' }}
+        >
+          {onTrack ? 'NO CAMINHO' : 'SUBIR O RITMO'}
+        </p>
+      </div>
+
+      <div className="px-4 pb-1">
+        {/* Progress bar */}
+        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-400"
+            style={{
+              width: `${pct}%`,
+              backgroundColor: onTrack ? 'oklch(0.55 0.15 145)' : 'oklch(0.65 0.18 55)',
+            }}
+          />
+        </div>
+
+        {/* Valores */}
+        <div className="mt-1.5 flex items-center justify-between">
+          <span className="font-mono text-sm text-muted-foreground">
+            {formatCurrency(g.current_amount_cents)}
+          </span>
+          <span className="font-mono text-sm font-medium">
+            {formatCurrency(g.target_amount_cents)}
+          </span>
+        </div>
+      </div>
+
+      {/* Insight box */}
+      {g.percentage < 100 && g.monthly_required_cents > 0 && (
+        <div className="mx-4 mt-3 rounded-lg border border-border bg-muted p-3">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-1">
+            PARA ATINGIR NO PRAZO
+          </p>
+          <p className="text-[18px] font-semibold leading-tight">
+            {formatCurrency(g.monthly_required_cents)}/mês
+          </p>
+          <p className="font-mono text-sm text-muted-foreground">
+            ou {formatCurrency(dailyRequired)}/dia
+          </p>
+        </div>
+      )}
+
+      {/* Footer pills */}
+      <div className="flex items-center gap-2 p-4 pt-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 gap-1.5"
+          onClick={() => onContribute(g)}
+          disabled={g.percentage >= 100}
+        >
+          <PiggyBank className="size-3.5" />
+          Contribuir
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onEdit(g)}
+        >
+          Editar
+        </Button>
+      </div>
+    </Card>
+  )
+}
 
 export default function MetasPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -32,9 +154,7 @@ export default function MetasPage() {
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null)
   const [contributeAmount, setContributeAmount] = useState('')
 
-  const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null)
-
-  const goalsQuery = useGoals()
+  const goalsQuery = useDashboardGoals()
   const createGoal = useCreateGoal()
   const updateGoal = useUpdateGoal()
   const contributeGoalMutation = useContributeGoal()
@@ -42,6 +162,14 @@ export default function MetasPage() {
 
   const goals = goalsQuery.data ?? []
   const loading = goalsQuery.isPending
+
+  // KPI strip
+  const totalInvested = goals.reduce((s, g) => s + g.current_amount_cents, 0)
+  const totalRemaining = goals.reduce((s, g) => {
+    const diff = g.target_amount_cents - g.current_amount_cents
+    return s + (diff > 0 ? diff : 0)
+  }, 0)
+  const totalMonthly = goals.reduce((s, g) => s + (g.monthly_required_cents ?? 0), 0)
 
   const handleCreate = async () => {
     if (!createForm.name || !createForm.target) return
@@ -98,18 +226,9 @@ export default function MetasPage() {
     }
   }
 
-  const handleDelete = async () => {
-    if (!deleteGoalId) return
-    try {
-      await deleteGoal.mutateAsync(deleteGoalId)
-      setDeleteGoalId(null)
-    } catch {
-      toast.error('Erro ao deletar meta.')
-    }
-  }
-
   return (
     <div className="flex flex-col gap-8">
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">Metas Financeiras</h1>
@@ -163,6 +282,30 @@ export default function MetasPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* KPI strip */}
+      {goals.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-1">
+              Investido em metas
+            </p>
+            <p className="font-mono text-lg font-semibold">{formatCurrency(totalInvested)}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-1">
+              A juntar ainda
+            </p>
+            <p className="font-mono text-lg font-semibold">{formatCurrency(totalRemaining)}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-1">
+              Aporte mensal recomendado
+            </p>
+            <p className="font-mono text-lg font-semibold">{formatCurrency(totalMonthly)}</p>
+          </div>
+        </div>
+      )}
 
       {/* Edit dialog */}
       <Dialog open={!!editGoal} onOpenChange={(open) => { if (!open) setEditGoal(null) }}>
@@ -243,117 +386,28 @@ export default function MetasPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirm dialog */}
-      <Dialog open={!!deleteGoalId} onOpenChange={(open) => { if (!open) setDeleteGoalId(null) }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Deletar meta</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">Tem certeza que deseja deletar esta meta? Esta ação não pode ser desfeita.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteGoalId(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={() => void handleDelete()} disabled={deleteGoal.isPending}>
-              {deleteGoal.isPending ? 'Deletando...' : 'Deletar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Goals list */}
+      {/* Goals grid */}
       {loading ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>
       ) : goals.length === 0 ? (
-        <Card>
-          <CardContent>
-            <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
-              <Target className="size-12 opacity-30" />
-              <p className="text-sm font-medium">Nenhuma meta cadastrada ainda.</p>
-              <p className="text-xs">Crie sua primeira meta financeira e comece a poupar.</p>
-              <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)}>
-                <PlusIcon className="mr-2 size-4" />
-                Criar primeira meta
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
+          <p className="text-sm font-medium">Nenhuma meta cadastrada ainda.</p>
+          <p className="text-xs">Crie sua primeira meta financeira e comece a poupar.</p>
+          <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)}>
+            <PlusIcon className="mr-2 size-4" />
+            Criar primeira meta
+          </Button>
+        </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           {goals.map((g) => (
-            <Card key={g.id} className={g.percentage >= 100 ? 'border-emerald-500/50' : ''}>
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base font-semibold leading-tight">{g.name}</CardTitle>
-                  {g.percentage >= 100 && (
-                    <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
-                      Concluída
-                    </span>
-                  )}
-                </div>
-                {g.deadline && (
-                  <p className="text-xs text-muted-foreground">
-                    Prazo:{' '}
-                    {new Date(g.deadline + 'T00:00:00').toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {formatCurrency(g.current_amount_cents)}
-                    </span>
-                    <span className="font-medium">{formatCurrency(g.target_amount_cents)}</span>
-                  </div>
-                  <ProgressBar value={g.percentage} />
-                  {g.deadline && g.percentage < 100 && (() => {
-                    const remaining = g.target_amount_cents - g.current_amount_cents
-                    const today = new Date()
-                    const deadline = new Date(g.deadline + 'T00:00:00')
-                    const diffMs = deadline.getTime() - today.getTime()
-                    const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
-                    const diffMonths = Math.max(1, Math.ceil(diffDays / 30))
-                    const perMonth = remaining / diffMonths
-                    const perDay = remaining / diffDays
-                    return (
-                      <p className="text-xs text-muted-foreground">
-                        {formatCurrency(perMonth)}/mês · {formatCurrency(perDay)}/dia para atingir no prazo
-                      </p>
-                    )
-                  })()}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-1.5"
-                    onClick={() => setContributeGoal(g)}
-                    disabled={g.percentage >= 100}
-                  >
-                    <PiggyBank className="size-3.5" />
-                    Contribuir
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEdit(g)}
-                  >
-                    Editar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => setDeleteGoalId(g.id)}
-                  >
-                    <Trash2Icon className="size-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <GoalCard
+              key={g.id}
+              g={g}
+              onContribute={setContributeGoal}
+              onEdit={openEdit}
+              onDelete={(id) => void deleteGoal.mutateAsync(id).catch(() => toast.error('Erro ao deletar meta.'))}
+            />
           ))}
         </div>
       )}
