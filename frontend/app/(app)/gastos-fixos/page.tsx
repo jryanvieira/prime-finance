@@ -78,6 +78,7 @@ export default function GastosFixosPage() {
         day_of_month: parseInt(formData.day_of_month),
         start_month: editingExpense.start_month || currentMonth,
         payment_method_id: formData.payment_method_id || undefined,
+        category: formData.category || undefined,
       })
     } else {
       await recurringExpensesService.create({
@@ -86,6 +87,7 @@ export default function GastosFixosPage() {
         day_of_month: parseInt(formData.day_of_month),
         start_month: currentMonth,
         payment_method_id: formData.payment_method_id || undefined,
+        category: formData.category || undefined,
       })
     }
 

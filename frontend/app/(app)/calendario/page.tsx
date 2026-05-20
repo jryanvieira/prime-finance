@@ -383,7 +383,7 @@ export default function CalendarioPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex flex-col">
+        <Card className="flex flex-col overflow-hidden">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between text-base font-medium">
               <span>
@@ -392,7 +392,7 @@ export default function CalendarioPage() {
               {selectedDay?.isToday && <Badge variant="secondary" className="text-[10px]">Hoje</Badge>}
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1">
+          <CardContent className="flex flex-col overflow-hidden flex-1 min-h-0">
             {loading ? (
               <div className="flex h-full min-h-[200px] flex-col items-center justify-center text-center">
                 <p className="text-sm text-muted-foreground">Carregando...</p>
@@ -408,8 +408,8 @@ export default function CalendarioPage() {
                 <p className="text-sm font-medium text-muted-foreground">Nenhum gasto</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
-                <ScrollArea className="max-h-[320px] pr-3 lg:max-h-[400px]">
+              <div className="flex flex-col gap-4 overflow-hidden flex-1 min-h-0">
+                <ScrollArea className="flex-1 min-h-0 pr-3">
                   <div className="space-y-4">
                     {selectedDay.realExpenses.length > 0 && (
                       <div>
