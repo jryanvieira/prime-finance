@@ -126,6 +126,38 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* Design tokens editoriais */
+:root {
+  --bg: #F2EBDE;
+  --bg-2: #EDE4D3;
+  --surface: #FFFCF5;
+  --surface-2: #FAF4E6;
+  --ink: #1E1A14;
+  --ink-2: #6B5F4E;
+  --ink-3: #9B8E78;
+  --accent-color: #C95F2D;
+  --accent-soft: #E89770;
+  --accent-deep: #8E3A14;
+  --accent-tint: #F8E4D5;
+  --ok: #5F6E2E;
+  --warn: #B58432;
+  --bad: #B33A2A;
+  --line: #DDD5C4;
+  --cat-alim: #5F6E2E;
+  --cat-comp: #C95F2D;
+  --cat-tran: #1F4F5A;
+  --cat-educ: #7E5BA8;
+  --cat-assi: #B58432;
+  --cat-saud: #B33A2A;
+  --cat-lazr: #8E3A14;
+  --cat-outros: #9B8E78;
+}
+
+.serif { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
+.serif-i { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 400; }
+.mono-num { font-family: 'Geist Mono', monospace; font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 0.625rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
