@@ -68,6 +68,10 @@ func (m *mockExpenseRepo) DeleteByInstallmentGroup(ctx context.Context, userID, 
 	return 0, nil
 }
 
+func (m *mockExpenseRepo) UpdateGroup(_ context.Context, _, _, _ string, _ int64, _ *string, _ *string) error {
+	return nil
+}
+
 func (m *mockExpenseRepo) CategoryHistory(ctx context.Context, userID string, from, to string) ([]*domainExpense.CategoryHistoryRaw, error) {
 	return nil, nil
 }

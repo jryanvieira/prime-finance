@@ -31,6 +31,9 @@ func (r *mockWeeklyExpenseRepo) Delete(_ context.Context, _, _ string) error    
 func (r *mockWeeklyExpenseRepo) DeleteByInstallmentGroup(_ context.Context, _, _ string) (int64, error) {
 	return 0, nil
 }
+func (r *mockWeeklyExpenseRepo) UpdateGroup(_ context.Context, _, _, _ string, _ int64, _ *string, _ *string) error {
+	return nil
+}
 func (r *mockWeeklyExpenseRepo) CategoryHistory(_ context.Context, _, _, _ string) ([]*domainExpense.CategoryHistoryRaw, error) {
 	return nil, nil
 }

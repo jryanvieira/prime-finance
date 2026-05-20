@@ -52,6 +52,9 @@ func (r *mockExpenseRepo) Delete(_ context.Context, _, _ string) error         {
 func (r *mockExpenseRepo) DeleteByInstallmentGroup(_ context.Context, _, _ string) (int64, error) {
 	return 0, nil
 }
+func (r *mockExpenseRepo) UpdateGroup(_ context.Context, _, _, _ string, _ int64, _ *string, _ *string) error {
+	return nil
+}
 func (r *mockExpenseRepo) CategoryHistory(_ context.Context, _, _, _ string) ([]*expense.CategoryHistoryRaw, error) {
 	return nil, nil
 }

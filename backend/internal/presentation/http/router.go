@@ -37,6 +37,7 @@ type RouterDeps struct {
 	UpdateExpenseUC      *appExpense.UpdateExpenseUseCase
 	DeleteExpenseUC      *appExpense.DeleteExpenseUseCase
 	DeleteInstGroupUC    *appExpense.DeleteInstallmentGroupUseCase
+	UpdateInstGroupUC    *appExpense.UpdateInstallmentGroupUseCase
 	ImportCSVUC          *appExpense.ImportCSVUseCase
 	MonthExpensesUC      *appExpense.MonthExpensesUseCase
 	ExportCSVUC          *appExpense.ExportCSVUseCase
@@ -222,6 +223,7 @@ func NewRouter(deps RouterDeps) *Router {
 			r.Get("/months/{month}/category-summary", monthHandler.handleCategorySummary)
 			r.Get("/months/{month}/export/pdf", exportPDFHandler.handleExportPDF)
 			r.Delete("/installment-groups/{group_id}", expenseHandler.handleDeleteInstallmentGroup)
+			r.Patch("/installment-groups/{group_id}", expenseHandler.handleUpdateInstallmentGroup)
 		})
 	})
 
