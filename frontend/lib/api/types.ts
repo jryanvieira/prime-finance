@@ -289,6 +289,7 @@ export interface CashflowResponse {
 // Projections
 export interface FutureMonthProjection {
   month: string
+  is_current_month: boolean
   total_fixed: number
   total_installments: number
   expected_income: number

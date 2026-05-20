@@ -95,7 +95,7 @@ export default function ProjectionsPage() {
           Projeções Financeiras
         </h1>
         <p className="text-muted-foreground">
-          Visualize seus compromissos para os próximos 6 meses.
+          Visualize seus compromissos do mês atual e dos próximos 6 meses.
         </p>
       </div>
 
@@ -297,8 +297,13 @@ export default function ProjectionsPage() {
                 <AccordionItem key={idx} value={`month-${idx}`} className={idx === summary.months.length - 1 ? "border-0" : ""}>
                   <AccordionTrigger className="px-6 hover:no-underline hover:bg-muted/30">
                     <div className="flex w-full items-center justify-between pr-4">
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         <span className="font-medium capitalize">{m.month}</span>
+                        {m.is_current_month && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            Atual
+                          </span>
+                        )}
                         <span className="text-sm text-muted-foreground hidden sm:inline-block">
                           {m.items.length} itens
                         </span>

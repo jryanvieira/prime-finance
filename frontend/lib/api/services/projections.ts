@@ -25,10 +25,9 @@ export const projectionsService = {
     const months: FutureMonthProjection[] = []
     const finishingInstallments: FinishingInstallment[] = []
 
-    // Fazer as chamadas para os próximos N meses
-    // Começa do mês SEGUINTE ao atual
+    // Fazer as chamadas para o mês atual e os próximos N meses
     const promises = []
-    for (let i = 1; i <= monthsAhead; i++) {
+    for (let i = 0; i <= monthsAhead; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       promises.push(
@@ -61,6 +60,7 @@ export const projectionsService = {
 
       months.push({
         month: res.dateObj.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+        is_current_month: res.monthKey === currentMonthKey,
         total_fixed: totalFixed,
         total_installments: totalInstallments,
         expected_income: expectedIncome,
