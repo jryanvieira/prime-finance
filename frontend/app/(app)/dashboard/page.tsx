@@ -50,7 +50,8 @@ const CAT_COLOR_MAP: Record<string, string> = {
   outros: 'var(--cat-outros)',
 }
 
-function catColor(name: string): string {
+function catColor(name?: string): string {
+  if (!name) return 'var(--cat-outros)'
   const lower = name.toLowerCase()
   for (const [key, color] of Object.entries(CAT_COLOR_MAP)) {
     if (lower.includes(key)) return color
