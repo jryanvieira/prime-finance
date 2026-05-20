@@ -334,6 +334,21 @@ export default function MetasPage() {
                     <span className="font-medium">{formatCurrency(g.target_amount_cents)}</span>
                   </div>
                   <ProgressBar value={g.percentage} />
+                  {g.deadline && g.percentage < 100 && (() => {
+                    const remaining = g.target_amount_cents - g.current_amount_cents
+                    const today = new Date()
+                    const deadline = new Date(g.deadline + 'T00:00:00')
+                    const diffMs = deadline.getTime() - today.getTime()
+                    const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+                    const diffMonths = Math.max(1, Math.ceil(diffDays / 30))
+                    const perMonth = remaining / diffMonths
+                    const perDay = remaining / diffDays
+                    return (
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(perMonth)}/mês · {formatCurrency(perDay)}/dia para atingir no prazo
+                      </p>
+                    )
+                  })()}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
