@@ -45,7 +45,14 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        <meta name="theme-color" content="#09090b" />
+        <meta name="theme-color" content="#F2EBDE" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#1A1611" media="(prefers-color-scheme: dark)" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="font-sans antialiased">
         <Providers>
