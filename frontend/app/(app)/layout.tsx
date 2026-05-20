@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { AppSidebar } from '@/components/app-sidebar'
+import { AddTransactionSheet } from '@/components/add-transaction-sheet'
 
 interface User {
   id: string
@@ -15,6 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [addOpen, setAddOpen] = useState(false)
 
   useEffect(() => {
     const savedAuth = localStorage.getItem('prime-finance-auth')
@@ -52,11 +54,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppSidebar userName={user.name} onLogout={handleLogout} />
-      <main className="lg:pl-64">
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+      <AppSidebar
+        userName={user.name || user.email}
+        onLogout={handleLogout}
+        onAddTransaction={() => setAddOpen(true)}
+      />
+      <main className="lg:pl-60">
         <div className="min-h-screen p-6 pt-20 lg:p-8 lg:pt-8">{children}</div>
       </main>
+      <AddTransactionSheet open={addOpen} onClose={() => setAddOpen(false)} onSuccess={() => setAddOpen(false)} />
     </div>
   )
 }

@@ -22,8 +22,7 @@ import {
 } from '@/components/ui/select'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { paymentMethodsService, type PaymentMethod } from '@/lib/api'
-import { useDashboardExpenses, useDashboardPaymentMethods } from '@/hooks/use-dashboard'
-import { useQueryClient } from '@tanstack/react-query'
+import { useDashboardExpenses, useDashboardPaymentMethods, useDashboardInvalidate } from '@/hooks/use-dashboard'
 
 const paymentTypes = [
   { value: 'card', label: 'Cartão' },
@@ -61,7 +60,7 @@ function formatCents(cents: number): string {
 export default function MeiosPagamentoPage() {
   const { data: methods = [], isLoading } = useDashboardPaymentMethods()
   const { data: expenses = [] } = useDashboardExpenses()
-  const qc = useQueryClient()
+  const invalidateDashboard = useDashboardInvalidate()
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null)
@@ -82,7 +81,7 @@ export default function MeiosPagamentoPage() {
     } else {
       await paymentMethodsService.create(formData)
     }
-    await qc.invalidateQueries({ queryKey: ['payment-methods'] })
+    await invalidateDashboard()
     resetForm()
     setIsCreateOpen(false)
   }
