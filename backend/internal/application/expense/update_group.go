@@ -2,7 +2,6 @@ package expense
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	domainExpense "dash-fin/internal/domain/expense"
@@ -33,11 +32,5 @@ func (uc *UpdateInstallmentGroupUseCase) Execute(ctx context.Context, req Update
 	if req.AmountCents <= 0 {
 		return domainExpense.ErrInvalidAmount
 	}
-	if err := uc.repo.UpdateGroup(ctx, req.UserID, req.GroupID, req.Description, req.AmountCents, req.Category, req.PaymentMethodID); err != nil {
-		if errors.Is(err, domainExpense.ErrExpenseNotFound) {
-			return err
-		}
-		return err
-	}
-	return nil
+	return uc.repo.UpdateGroup(ctx, req.UserID, req.GroupID, req.Description, req.AmountCents, req.Category, req.PaymentMethodID)
 }

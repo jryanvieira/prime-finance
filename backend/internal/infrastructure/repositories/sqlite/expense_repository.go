@@ -197,6 +197,7 @@ SET description       = ?,
     payment_method_id = ?,
     updated_at        = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 WHERE user_id = ? AND installment_group_id = ?;
+// amountCents aparece 3×: amount_cents, monthly_amount_cents e fator de total_amount_cents
 `, description, amountCents, amountCents, amountCents, category, paymentMethodID, userID, groupID)
 	if err != nil {
 		return err
