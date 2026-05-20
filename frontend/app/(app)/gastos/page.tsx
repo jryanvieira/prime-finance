@@ -581,7 +581,7 @@ export default function GastosPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24].map((n) => (
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 36, 48].map((n) => (
                             <SelectItem key={n} value={n.toString()}>
                               {n === 1 ? '💸 Pagamento Único' : `💳 Dividir em ${n}x`}
                             </SelectItem>

@@ -19,6 +19,7 @@ interface ApiError {
 
 class ApiClient {
   private baseUrl: string
+  private refreshPromise: Promise<boolean> | null = null
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl
@@ -29,18 +30,57 @@ class ApiClient {
     return localStorage.getItem('prime-finance-token')
   }
 
+  private async tryRefresh(): Promise<boolean> {
+    if (this.refreshPromise) return this.refreshPromise
+
+    this.refreshPromise = (async () => {
+      try {
+        const refreshToken = localStorage.getItem('prime-finance-refresh-token')
+        if (!refreshToken) return false
+
+        const response = await fetch(`${this.baseUrl}/v1/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        })
+
+        if (!response.ok) return false
+
+        const data = await response.json()
+        localStorage.setItem('prime-finance-token', data.access_token)
+        if (data.refresh_token) {
+          localStorage.setItem('prime-finance-refresh-token', data.refresh_token)
+        }
+        return true
+      } catch {
+        return false
+      } finally {
+        this.refreshPromise = null
+      }
+    })()
+
+    return this.refreshPromise
+  }
+
+  private clearSession() {
+    localStorage.removeItem('prime-finance-token')
+    localStorage.removeItem('prime-finance-refresh-token')
+    localStorage.removeItem('prime-finance-auth')
+    window.location.href = '/login'
+  }
+
   private async request<T>(
     endpoint: string,
-    options: RequestOptions = {}
+    options: RequestOptions = {},
+    isRetry = false
   ): Promise<T> {
     const { skipAuth = false, ...fetchOptions } = options
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...fetchOptions.headers,
     }
 
-    // Adicionar token JWT se disponível e não for rota pública
     if (!skipAuth) {
       const token = this.getToken()
       if (token) {
@@ -53,11 +93,20 @@ class ApiClient {
       headers,
     })
 
-    // Verificar se a resposta é JSON
     const contentType = response.headers.get('content-type')
     const isJson = contentType?.includes('application/json')
 
     if (!response.ok) {
+      const isAuthEndpoint = ['login', 'signup', 'refresh'].some(e => endpoint.includes(e))
+
+      if (response.status === 401 && !isAuthEndpoint && !isRetry) {
+        const refreshed = await this.tryRefresh()
+        if (refreshed) return this.request<T>(endpoint, options, true)
+        this.clearSession()
+      } else if (response.status === 401 && !isAuthEndpoint) {
+        this.clearSession()
+      }
+
       const error: ApiError = {
         message: 'Erro ao processar requisição',
         status: response.status,
@@ -65,7 +114,6 @@ class ApiClient {
 
       if (isJson) {
         const data = await response.json()
-        // O backend retorna { error: { code, message } } ou { message, code }
         if (data.error && typeof data.error === 'object') {
           error.message = data.error.message || error.message
           error.code = data.error.code
@@ -75,18 +123,9 @@ class ApiClient {
         }
       }
 
-      // Token expirado — redirecionar para login apenas fora das rotas de auth
-      const isAuthEndpoint = ['login', 'signup', 'refresh'].some(e => endpoint.includes(e))
-      if (response.status === 401 && !isAuthEndpoint) {
-        localStorage.removeItem('prime-finance-token')
-        localStorage.removeItem('prime-finance-auth')
-        window.location.href = '/login'
-      }
-
       throw error
     }
 
-    // Retornar dados se for JSON, caso contrário retornar vazio
     if (isJson) {
       return response.json()
     }
