@@ -463,7 +463,7 @@ export default function GastosPage() {
                 Novo Gasto
               </Button>
             </SheetTrigger>
-            <SheetContent className="flex flex-col w-full sm:max-w-md overflow-hidden">
+            <SheetContent className="flex flex-col w-full sm:max-w-md overflow-hidden px-6">
               <SheetHeader>
                 <SheetTitle>
                   {editingExpense ? 'Editar gasto' : 'Adicionar novo gasto'}
