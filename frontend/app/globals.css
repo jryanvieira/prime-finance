@@ -39,6 +39,13 @@
   --sidebar-ring: oklch(0.18 0 0);
   --success: oklch(0.55 0.15 150);
   --success-foreground: oklch(0.98 0 0);
+  --ok: oklch(0.55 0.15 150);
+  --ink-3: oklch(0.60 0 0);
+  --line: oklch(0.75 0 0);
+  --pix: #32bcad;
+  --inter: #ff7a00;
+  --nu: #820ad1;
+  --mp: #009ee3;
 }
 
 .dark {
@@ -125,5 +132,21 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .serif {
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  .mono-num {
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+  }
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 }
