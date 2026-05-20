@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useRef } from 'react'
+import { useMemo, useState, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   SearchIcon,
@@ -118,7 +118,7 @@ function parseDateLabel(dateStr: string) {
   }
 }
 
-export default function TransacoesPage() {
+function TransacoesContent() {
   const searchParams = useSearchParams()
   const tipoFromUrl = searchParams.get('tipo') as TipoFiltro | null
 
@@ -607,5 +607,13 @@ export default function TransacoesPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function TransacoesPage() {
+  return (
+    <Suspense>
+      <TransacoesContent />
+    </Suspense>
   )
 }
