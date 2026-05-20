@@ -29,6 +29,9 @@ func (m *mockRepo) Delete(ctx context.Context, userID, id string) error        {
 func (m *mockRepo) DeleteByInstallmentGroup(ctx context.Context, userID, groupID string) (int64, error) {
 	return 0, nil
 }
+func (m *mockRepo) UpdateGroup(_ context.Context, _, _, _ string, _ int64, _ *string, _ *string) error {
+	return nil
+}
 func (m *mockRepo) CategoryHistory(ctx context.Context, userID, from, to string) ([]*domainExpense.CategoryHistoryRaw, error) {
 	return m.raw, m.err
 }

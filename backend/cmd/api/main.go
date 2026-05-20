@@ -114,6 +114,7 @@ func main() {
 	updateExpenseUC := expenseApp.NewUpdateExpenseUseCase(expenseRepo)
 	deleteExpenseUC := expenseApp.NewDeleteExpenseUseCase(expenseRepo)
 	deleteInstGroupUC := expenseApp.NewDeleteInstallmentGroupUseCase(expenseRepo)
+	updateInstGroupUC := expenseApp.NewUpdateInstallmentGroupUseCase(expenseRepo)
 	importCSVUC := expenseApp.NewImportCSVUseCase(expenseRepo)
 	monthExpensesUC := expenseApp.NewMonthExpensesUseCase(expenseRepo)
 	exportCSVUC := expenseApp.NewExportCSVUseCase(expenseRepo)
@@ -177,6 +178,7 @@ func main() {
 		UpdateExpenseUC:   updateExpenseUC,
 		DeleteExpenseUC:   deleteExpenseUC,
 		DeleteInstGroupUC: deleteInstGroupUC,
+		UpdateInstGroupUC: updateInstGroupUC,
 		ImportCSVUC:       importCSVUC,
 		MonthExpensesUC:   monthExpensesUC,
 		ExportCSVUC:       exportCSVUC,

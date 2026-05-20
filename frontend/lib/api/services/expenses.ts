@@ -143,6 +143,18 @@ export const expensesService = {
   },
 
   /**
+   * Atualizar todas as parcelas de um grupo
+   */
+  async updateGroup(groupID: string, data: {
+    description: string
+    amount_cents: number
+    category?: string | null
+    payment_method_id?: string | null
+  }): Promise<void> {
+    await api.patch<void>(`/v1/installment-groups/${groupID}`, data)
+  },
+
+  /**
    * Obter gastos de um mês específico
    */
   async getByMonth(year: number, month: number): Promise<Expense[]> {

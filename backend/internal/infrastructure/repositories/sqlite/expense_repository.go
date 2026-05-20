@@ -186,6 +186,32 @@ WHERE id = ? AND user_id = ?;
 	return nil
 }
 
+func (r *ExpenseRepository) UpdateGroup(ctx context.Context, userID, groupID, description string, amountCents int64, category *string, paymentMethodID *string) error {
+	res, err := r.db.ExecContext(ctx, `
+UPDATE expenses
+SET description       = ?,
+    amount_cents      = ?,
+    monthly_amount_cents = ?,
+    total_amount_cents   = ? * COALESCE(installments_count, 1),
+    category          = ?,
+    payment_method_id = ?,
+    updated_at        = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+WHERE user_id = ? AND installment_group_id = ?;
+// amountCents aparece 3×: amount_cents, monthly_amount_cents e fator de total_amount_cents
+`, description, amountCents, amountCents, amountCents, category, paymentMethodID, userID, groupID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return expense.ErrExpenseNotFound
+	}
+	return nil
+}
+
 func (r *ExpenseRepository) DeleteByInstallmentGroup(ctx context.Context, userID, groupID string) (int64, error) {
 	res, err := r.db.ExecContext(ctx, `
 DELETE FROM expenses

@@ -55,6 +55,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   importService,
   exportService,
+  expensesService,
   type Expense,
   type ImportResult,
 } from '@/lib/api'
@@ -78,6 +79,8 @@ export default function GastosPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [editScope, setEditScope] = useState<'single' | 'group'>('single')
+  const [groupConfirmExpense, setGroupConfirmExpense] = useState<Expense | null>(null)
 
   const [exportLoading, setExportLoading] = useState(false)
 
@@ -174,7 +177,15 @@ export default function GastosPage() {
     const installments = parseInt(formData.installments) || 1
 
     try {
-      if (editingExpense) {
+      if (editingExpense && editScope === 'group' && editingExpense.installment_group_id) {
+        await expensesService.updateGroup(editingExpense.installment_group_id, {
+          description: formData.description,
+          amount_cents: amountCents,
+          category: formData.category || null,
+          payment_method_id: formData.payment_method_id || null,
+        })
+        queryClient.invalidateQueries({ queryKey: ['expenses'] })
+      } else if (editingExpense) {
         await updateExpense.mutateAsync({
           id: editingExpense.id,
           data: {
@@ -204,8 +215,9 @@ export default function GastosPage() {
     }
   }
 
-  const handleEdit = (expense: Expense) => {
+  const openEditForm = (expense: Expense, scope: 'single' | 'group') => {
     setEditingExpense(expense)
+    setEditScope(scope)
     setFormData({
       description: expense.description,
       amount: (expense.amount_cents / 100).toFixed(2),
@@ -215,6 +227,14 @@ export default function GastosPage() {
       installments: expense.installments_count?.toString() || '1',
     })
     setIsCreateOpen(true)
+  }
+
+  const handleEdit = (expense: Expense) => {
+    if (expense.installment_group_id) {
+      setGroupConfirmExpense(expense)
+    } else {
+      openEditForm(expense, 'single')
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -432,6 +452,39 @@ export default function GastosPage() {
                   </DialogFooter>
                 </>
               )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Installment group scope dialog */}
+          <Dialog open={!!groupConfirmExpense} onOpenChange={(open) => { if (!open) setGroupConfirmExpense(null) }}>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Editar parcela</DialogTitle>
+                <DialogDescription>
+                  Esta é uma compra parcelada em {groupConfirmExpense?.installments_count}x. O que deseja alterar?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="flex-col gap-2 sm:flex-col">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const e = groupConfirmExpense!
+                    setGroupConfirmExpense(null)
+                    openEditForm(e, 'single')
+                  }}
+                >
+                  Só esta parcela
+                </Button>
+                <Button
+                  onClick={() => {
+                    const e = groupConfirmExpense!
+                    setGroupConfirmExpense(null)
+                    openEditForm(e, 'group')
+                  }}
+                >
+                  Todas as {groupConfirmExpense?.installments_count} parcelas
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 

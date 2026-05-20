@@ -20,6 +20,7 @@ type mockExpenseRepo struct {
 	updateFn               func(ctx context.Context, e *domainExpense.Expense) error
 	deleteFn               func(ctx context.Context, userID, id string) error
 	deleteByInstGroupFn    func(ctx context.Context, userID, groupID string) (int64, error)
+	updateGroupFn          func(ctx context.Context, userID, groupID, description string, amountCents int64, category *string, paymentMethodID *string) error
 }
 
 func (m *mockExpenseRepo) Create(ctx context.Context, e *domainExpense.Expense) error {
@@ -66,6 +67,13 @@ func (m *mockExpenseRepo) DeleteByInstallmentGroup(ctx context.Context, userID, 
 		return m.deleteByInstGroupFn(ctx, userID, groupID)
 	}
 	return 0, nil
+}
+
+func (m *mockExpenseRepo) UpdateGroup(ctx context.Context, userID, groupID, description string, amountCents int64, category *string, paymentMethodID *string) error {
+	if m.updateGroupFn != nil {
+		return m.updateGroupFn(ctx, userID, groupID, description, amountCents, category, paymentMethodID)
+	}
+	return nil
 }
 
 func (m *mockExpenseRepo) CategoryHistory(ctx context.Context, userID string, from, to string) ([]*domainExpense.CategoryHistoryRaw, error) {

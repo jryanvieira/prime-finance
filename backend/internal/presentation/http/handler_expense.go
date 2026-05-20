@@ -19,6 +19,7 @@ type expenseHandler struct {
 	updateUC          *appExpense.UpdateExpenseUseCase
 	deleteUC          *appExpense.DeleteExpenseUseCase
 	deleteGroupUC     *appExpense.DeleteInstallmentGroupUseCase
+	updateGroupUC     *appExpense.UpdateInstallmentGroupUseCase
 	categoryHistoryUC *appExpense.CategoryHistoryUseCase
 }
 
@@ -29,6 +30,7 @@ func newExpenseHandler(deps RouterDeps) *expenseHandler {
 		updateUC:          deps.UpdateExpenseUC,
 		deleteUC:          deps.DeleteExpenseUC,
 		deleteGroupUC:     deps.DeleteInstGroupUC,
+		updateGroupUC:     deps.UpdateInstGroupUC,
 		categoryHistoryUC: deps.CategoryHistoryUC,
 	}
 }
@@ -176,6 +178,45 @@ func (h *expenseHandler) handleCategoryHistory(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *expenseHandler) handleUpdateInstallmentGroup(w http.ResponseWriter, r *http.Request) {
+	userID, ok := requireUserID(r)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "missing user")
+		return
+	}
+	groupID := chi.URLParam(r, "group_id")
+	if groupID == "" {
+		writeError(w, http.StatusBadRequest, "validation_error", "group_id is required")
+		return
+	}
+	if _, err := uuid.Parse(groupID); err != nil {
+		writeError(w, http.StatusBadRequest, "validation_error", "invalid group_id")
+		return
+	}
+
+	var req appExpense.UpdateInstallmentGroupRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "invalid json body")
+		return
+	}
+	req.UserID = userID
+	req.GroupID = groupID
+
+	if err := h.updateGroupUC.Execute(r.Context(), req); err != nil {
+		if errors.Is(err, domainExpense.ErrExpenseNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "installment group not found")
+			return
+		}
+		if errors.Is(err, domainExpense.ErrEmptyDescription) || errors.Is(err, domainExpense.ErrInvalidAmount) {
+			writeError(w, http.StatusBadRequest, "validation_error", err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "failed to update installment group")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"updated": true})
 }
 
 func (h *expenseHandler) handleDeleteInstallmentGroup(w http.ResponseWriter, r *http.Request) {
