@@ -95,6 +95,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: 1.2.8
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tanstack/react-query':
+        specifier: ^5.100.10
+        version: 5.100.10(react@19.2.4)
       '@vercel/analytics':
         specifier: 1.6.1
         version: 1.6.1(next@16.2.0(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
@@ -1770,6 +1773,14 @@ packages:
 
   '@tailwindcss/postcss@4.2.2':
     resolution: {integrity: sha512-n4goKQbW8RVXIbNKRB/45LzyUqN451deQK0nzIeauVEqjlI49slUlgKYJM2QyUzap/PcpnS7kzSUmPb1sCRvYQ==}
+
+  '@tanstack/query-core@5.100.10':
+    resolution: {integrity: sha512-8UR0yJR+GiQ40m3lPhUr0xbfAupe6GSQiksSBSa9SM2NjezFyxXCIA69/lz8cSoNKZLrw1/PktIyQBJcVeMi3w==}
+
+  '@tanstack/react-query@5.100.10':
+    resolution: {integrity: sha512-FLaZf2RCrA/Zgp4aiu5tG3TyasTRO7aZ99skxQpr3Hg/zXOhu6yq5FZCYQ/tRaJtM9ylnoK8tFK7PolXQadv6Q==}
+    peerDependencies:
+      react: ^18 || ^19
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -5089,6 +5100,13 @@ snapshots:
       '@tailwindcss/oxide': 4.2.2
       postcss: 8.5.8
       tailwindcss: 4.2.2
+
+  '@tanstack/query-core@5.100.10': {}
+
+  '@tanstack/react-query@5.100.10(react@19.2.4)':
+    dependencies:
+      '@tanstack/query-core': 5.100.10
+      react: 19.2.4
 
   '@types/d3-array@3.2.2': {}
 
