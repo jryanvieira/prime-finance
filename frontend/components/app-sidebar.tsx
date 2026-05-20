@@ -16,11 +16,19 @@ import {
   Target,
   PieChart,
   ArrowLeftRight,
+  ChevronUp,
 } from 'lucide-react'
 import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -32,7 +40,6 @@ const navigation = [
   { name: 'Calendario', href: '/calendario', icon: CalendarDays },
   { name: 'Orçamentos', href: '/orcamentos', icon: PieChart },
   { name: 'Gastos Fixos', href: '/gastos-fixos', icon: CalendarClock },
-  { name: 'Meios de Pagamento', href: '/meios-pagamento', icon: CreditCard },
 ]
 
 interface AppSidebarProps {
@@ -109,18 +116,36 @@ export function AppSidebar({ userName, onLogout }: AppSidebarProps) {
 
         {/* Footer */}
         <div className="border-t border-sidebar-border p-4">
-          <div className="mb-3 px-3">
-            <p className="text-sm font-medium text-sidebar-foreground">{userName || 'Usuário'}</p>
-            <p className="text-xs text-sidebar-foreground/60">Conta pessoal</p>
-          </div>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            onClick={onLogout}
-          >
-            <LogOut className="size-5" />
-            Sair
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-between gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground px-3"
+              >
+                <div className="flex flex-col items-start">
+                  <p className="text-sm font-medium text-sidebar-foreground">{userName || 'Usuário'}</p>
+                  <p className="text-xs text-sidebar-foreground/60">Conta pessoal</p>
+                </div>
+                <ChevronUp className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-56">
+              <DropdownMenuItem asChild>
+                <Link href="/meios-pagamento" className="flex items-center gap-2">
+                  <CreditCard className="size-4" />
+                  Meios de pagamento
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-destructive focus:text-destructive"
+                onClick={onLogout}
+              >
+                <LogOut className="size-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
     </>
